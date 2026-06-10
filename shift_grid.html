@@ -88,14 +88,14 @@
         <div class="scanlines rounded-2xl"></div>
         
         <!-- Schermata di Benvenuto / Overlay Istruzioni -->
-        <div id="welcome-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-30 transition-opacity duration-300">
-            <div class="max-w-md space-y-6">
+        <div id="welcome-overlay" class="absolute inset-0 bg-slate-950/98 flex flex-col items-center justify-center p-6 text-center z-30 overflow-y-auto">
+            <div class="max-w-md my-auto space-y-6 py-6">
                 <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/20">
                     <i data-lucide="gamepad-2" class="w-8 h-8 text-white"></i>
                 </div>
                 <div>
                     <h2 class="text-2xl font-bold text-white mb-2">Benvenuto in Shift Grid</h2>
-                    <p class="text-slate-400 text-sm">I nemici rossi e arancioni cercheranno di eliminarti. Carica lo scatto e usalo per distruggerli impattando contro di loro!</p>
+                    <p class="text-slate-400 text-sm">Controlli un nucleo di energia geometrica bianco. Evita le minacce cromatiche e manipola la percezione dello spazio!</p>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-3 text-left text-xs bg-slate-900/50 p-4 border border-slate-800 rounded-xl">
@@ -104,21 +104,106 @@
                         <div class="flex items-center gap-2"><kbd class="px-2 py-1 bg-slate-800 rounded text-slate-300">W A S D</kbd> o <span class="text-slate-400">Frecce</span></div>
                     </div>
                     <div class="space-y-2">
-                        <span class="text-cyan-400 font-semibold uppercase block">Danno ai Nemici</span>
-                        <div class="text-slate-400">Effettua uno <span class="text-white font-semibold">Scatto Caricato</span> direttamente contro i nemici per danneggiarli.</div>
+                        <span class="text-cyan-400 font-semibold uppercase block">Innesco Scatto</span>
+                        <div class="text-slate-400">Tieni premuto <span class="text-white font-semibold">Shift</span> o il <span class="text-white font-semibold">Tasto Dx Mouse</span>. Rilascia per caricare e scattare!</div>
                     </div>
                     <div class="space-y-2 col-span-2 border-t border-slate-800 pt-2 mt-1">
-                        <span class="text-violet-400 font-semibold uppercase block">Tipologie di Nemici</span>
+                        <span class="text-violet-400 font-semibold uppercase block">Shift Dimensionale</span>
                         <div class="text-slate-400">
-                            • <span class="text-red-400 font-semibold">Rosso (Inseguitore)</span>: IA avanzata con scansione degli ostacoli e distanziamento di gruppo.<br>
-                            • <span class="text-orange-400 font-semibold">Arancione (Ciclico)</span>: Si muove solo sulla griglia a rimbalzi d'azione orari.
+                            Premi <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">Spazio</kbd> o <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">E</kbd> per passare alla percezione a griglia (turno per turno).
                         </div>
                     </div>
                 </div>
 
-                <button id="start-btn" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-                    Inizia Test Combattimento
-                </button>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button id="bestiary-open-btn" class="flex-1 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        Apri Bestiario
+                    </button>
+                    <button id="start-btn" class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                        Inizia Avventura
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay Bestiario -->
+        <div id="bestiary-overlay" class="absolute inset-0 bg-slate-950/98 hidden flex-col items-center justify-start p-6 z-40 overflow-y-auto">
+            <div class="w-full max-w-2xl space-y-6 py-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-6 h-6"></i>
+                        ANALISI CREATURE CROMATICHE
+                    </h2>
+                    <button id="bestiary-close-btn" class="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <!-- Lista Mostri -->
+                <div class="grid gap-4 sm:grid-cols-2 text-left">
+                    
+                    <!-- Inseguitore -->
+                    <div class="p-4 bg-slate-900/50 border border-red-500/20 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-red-500 rounded shadow-lg shadow-red-500/50"></span>
+                            <h3 class="font-bold text-white text-base">Inseguitore Rosso</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Comportamento base. Ti segue in modo dinamico e carica scatti rapidi per intercettarti.</p>
+                        <div class="text-[10px] text-red-400 font-mono">VITA: Elevata | AGGRESSIVITÀ: Media</div>
+                    </div>
+
+                    <!-- Ciclico -->
+                    <div class="p-4 bg-slate-900/50 border border-orange-500/20 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-orange-500 rounded shadow-lg shadow-orange-500/50 flex items-center justify-center text-[10px] text-white">🡒</span>
+                            <h3 class="font-bold text-white text-base">Ciclico Arancione</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Vincolato alla griglia. Si muove a ritmi elastici e cambia direzione in senso orario quando trova ostacoli.</p>
+                        <div class="text-[10px] text-orange-400 font-mono">VITA: Media | AGGRESSIVITÀ: Prevedibile</div>
+                    </div>
+
+                    <!-- Berserker -->
+                    <div class="p-4 bg-slate-900/50 border border-red-900/30 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-red-950 border border-red-700 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-base">Berserker Rosso Scuro</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Frenetico ed estremamente rapido. Carica ed esegue scatti eccezionalmente lunghi che coprono tutta l'area.</p>
+                        <div class="text-[10px] text-red-600 font-mono">VITA: Bassissima (1 HP) | VELOCITÀ: Estrema</div>
+                    </div>
+
+                    <!-- Tank -->
+                    <div class="p-4 bg-slate-900/50 border border-red-300/20 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-red-300 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-base">Tank Rosso Chiaro</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Un colosso massiccio e lento. Possiede moltissima energia vitale ed esegue impatti a corto raggio devastanti.</p>
+                        <div class="text-[10px] text-red-300 font-mono">VITA: Altissima (6 HP) | VELOCITÀ: Molto Lenta</div>
+                    </div>
+
+                    <!-- Cacciatore -->
+                    <div class="p-4 bg-slate-900/50 border border-indigo-500/20 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-indigo-500 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-base">Cacciatore Blu-Viola</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Predatore tattico. Tenta di allinearsi perfettamente sui tuoi assi verticali o orizzontali per colpirti a colpo sicuro.</p>
+                        <div class="text-[10px] text-indigo-400 font-mono">VITA: Media | PRECISIONE: Eccellente</div>
+                    </div>
+
+                    <!-- Gravitor -->
+                    <div class="p-4 bg-slate-900/50 border border-purple-500/20 rounded-xl space-y-2">
+                        <div class="flex items-center gap-3">
+                            <span class="w-5 h-5 bg-purple-500 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-base">Gravitor Viola</h3>
+                        </div>
+                        <p class="text-xs text-slate-400">Anomalia gravitazionale (Piano 6+). Non si muove e non fa danno, ma ruota periodicamente lo schermo di 90°!</p>
+                        <div class="text-[10px] text-purple-400 font-mono">VITA: Elevata | EFFETTO: Rotazione Spaziale</div>
+                    </div>
+
+                </div>
             </div>
         </div>
 
@@ -149,11 +234,11 @@
             </div>
             <div class="flex items-center gap-2">
                 <span class="w-3 h-3 bg-red-500 rounded-sm"></span>
-                <span>Inseguitore (IA+)</span>
+                <span>Minacce IA</span>
             </div>
             <div class="flex items-center gap-2">
-                <span class="w-3 h-3 bg-orange-500 rounded-sm"></span>
-                <span>Ciclico</span>
+                <span class="w-3 h-3 bg-purple-500 rounded-sm"></span>
+                <span>Gravitor</span>
             </div>
             <div class="flex items-center gap-2">
                 <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">SHIFT / DX MOUSE</kbd>
@@ -188,8 +273,11 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const welcomeOverlay = document.getElementById('welcome-overlay');
+        const bestiaryOverlay = document.getElementById('bestiary-overlay');
         const gameoverOverlay = document.getElementById('gameover-overlay');
         const startBtn = document.getElementById('start-btn');
+        const bestiaryOpenBtn = document.getElementById('bestiary-open-btn');
+        const bestiaryCloseBtn = document.getElementById('bestiary-close-btn');
         const restartBtn = document.getElementById('restart-btn');
         const regenBtn = document.getElementById('regen-btn');
         const snapBtn = document.getElementById('snap-btn');
@@ -206,9 +294,13 @@
         let isGameRunning = false;
         let snapMode = false; // false = Libero, true = Snap alla griglia
         let walls = [];       // Array di muri (coordinate della griglia)
-        let enemies = [];     // Array dei nemici (rossi e arancioni)
+        let enemies = [];     // Array dei nemici (rossi, arancioni, viola, blu)
         let particles = [];   // Array particelle d'impatto grafiche
         let floorLevel = 1;
+
+        // Meccaniche speciali Gravitor (Rotazione Canvas Bezier)
+        const rotationState = { angle: 0 }; // Angolo visuale corrente in radianti
+        let globalRotationWarning = false;   // Flag per avviso purple flash
 
         // Variabili per Screen Shake (Fisica tremolio schermo)
         let shakeAmount = 0;
@@ -299,10 +391,7 @@
             // Sincronizza anche i nemici se attivi
             enemies.forEach(enemy => {
                 enemy.size = cellSize * 0.75;
-                if (enemy.type === 'cycler' && !enemy.isAnimating) {
-                    enemy.x = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
-                    enemy.y = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
-                } else if (enemy.type !== 'cycler') {
+                if (!enemy.isAnimating) {
                     enemy.x = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
                     enemy.y = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
                 }
@@ -317,6 +406,10 @@
 
         // Generazione procedurale della mappa + Nemici
         function generateFloor() {
+            // Disattiva avvisi di rotazione residui e ripristina angolo della camera
+            globalRotationWarning = false;
+            rotationState.angle = 0;
+
             const grid = [];
             for (let r = 0; r < GRID_ROWS; r++) {
                 grid[r] = [];
@@ -332,7 +425,7 @@
             grid[walkerY][walkerX] = false;
 
             const totalCells = GRID_COLS * GRID_ROWS;
-            const targetEmptyPercentage = 0.78; 
+            const targetEmptyPercentage = 0.62; 
             const cellsToClear = Math.floor(totalCells * targetEmptyPercentage);
             let clearedCellsCount = 1;
 
@@ -388,7 +481,7 @@
                 targets: walls,
                 opacity: 1,
                 duration: 500,
-                delay: anime.stagger(15, {grid: [GRID_COLS, GRID_ROWS], from: 'center'}),
+                delay: anime.stagger(12, {grid: [GRID_COLS, GRID_ROWS], from: 'center'}),
                 easing: 'easeOutQuad'
             });
 
@@ -396,10 +489,15 @@
             spawnEnemies(grid);
         }
 
-        // Spawna un numero casuale di nemici (quadrati rossi e arancioni)
+        // Spawna nemici basandosi sul piano corrente
         function spawnEnemies(grid) {
             enemies = [];
-            const numEnemies = 3 + Math.floor(Math.random() * 4); // 3 - 6 nemici per piano
+            const numEnemies = 3 + Math.floor(Math.random() * 3) + Math.floor(floorLevel / 3); 
+
+            // Definiamo i mostri e i loro tassi di comparsa
+            // Gravitor compare solo se il piano è maggiore di 5
+            const allowGravitor = floorLevel > 5;
+            let gravitorSpawned = false;
 
             for (let i = 0; i < numEnemies; i++) {
                 let foundSpot = false;
@@ -421,24 +519,61 @@
                 }
 
                 if (foundSpot) {
-                    // 50% di probabilità di generare un nemico ciclico arancione o un inseguitore rosso
-                    const isCycler = Math.random() < 0.5;
+                    // Selezione pesata della tipologia di mostro
+                    let typeChoice = Math.random();
+                    let spawnType = 'standard';
 
-                    if (isCycler) {
-                        // Nuovo tipo di nemico: Arancione Ciclico vincolato alla griglia
+                    if (allowGravitor && !gravitorSpawned && typeChoice < 0.15) {
+                        spawnType = 'gravitor';
+                        gravitorSpawned = true; // Massimo 1 gravitor a schermo per evitare il caos di rotazioni continui
+                    } else if (typeChoice < 0.22) {
+                        spawnType = 'cycler';
+                    } else if (typeChoice < 0.42) {
+                        spawnType = 'berserker';
+                    } else if (typeChoice < 0.62) {
+                        spawnType = 'tank';
+                    } else if (typeChoice < 0.82) {
+                        spawnType = 'hunter';
+                    } else {
+                        spawnType = 'standard';
+                    }
+
+                    const enemySize = cellSize * 0.75;
+                    const initX = col * cellSize + (cellSize - enemySize) / 2;
+                    const initY = row * cellSize + (cellSize - enemySize) / 2;
+
+                    if (spawnType === 'gravitor') {
+                        enemies.push({
+                            type: 'gravitor',
+                            gridX: col,
+                            gridY: row,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
+                            maxHp: 4,
+                            hp: 4,
+                            timer: 360, // ~6 secondi di intervallo iniziale tra rotazioni
+                            isWarning: false,
+                            angle: 0,
+                            scaleX: 1,
+                            scaleY: 1,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                    } else if (spawnType === 'cycler') {
                         enemies.push({
                             type: 'cycler',
                             gridX: col,
                             gridY: row,
-                            x: col * cellSize + (cellSize - cellSize * 0.75) / 2,
-                            y: row * cellSize + (cellSize - cellSize * 0.75) / 2,
-                            size: cellSize * 0.75,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
                             maxHp: 3,
                             hp: 3,
-                            dir: { x: 1, y: 0 },      // Direzione di scatto iniziale (Destra)
-                            angle: 0,                 // Angolo di rotazione visivo
-                            cyclerState: 'dash',      // Stato di avvio: pronto a scattare
-                            timer: 30,                // Timer di attesa (frazione di secondo)
+                            dir: { x: 1, y: 0 },      
+                            angle: 0,                 
+                            cyclerState: 'dash',      
+                            timer: 30,                
                             isAnimating: false,
                             isDashing: false,
                             scaleX: 1,
@@ -446,27 +581,97 @@
                             offsetX: 0,
                             offsetY: 0
                         });
+                    } else if (spawnType === 'berserker') {
+                        enemies.push({
+                            type: 'berserker',
+                            gridX: col,
+                            gridY: row,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
+                            maxHp: 1, // Vita bassissima
+                            hp: 1,
+                            speed: 2.5, // Molto veloce
+                            state: 'patrol',
+                            charge: 0,
+                            chargeDir: { x: 0, y: 0 },
+                            isDashing: false,
+                            dashTimer: 0,
+                            dashCooldown: 90, // Cooldown scatto molto corto
+                            cooldownTimer: 0,
+                            scaleX: 1,
+                            scaleY: 1,
+                            angle: 0,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                    } else if (spawnType === 'tank') {
+                        enemies.push({
+                            type: 'tank',
+                            gridX: col,
+                            gridY: row,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
+                            maxHp: 6, // Vita altissima
+                            hp: 6,
+                            speed: 0.9, // Lento
+                            state: 'patrol',
+                            charge: 0,
+                            chargeDir: { x: 0, y: 0 },
+                            isDashing: false,
+                            dashTimer: 0,
+                            dashCooldown: 180, 
+                            cooldownTimer: 0,
+                            scaleX: 1,
+                            scaleY: 1,
+                            angle: 0,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                    } else if (spawnType === 'hunter') {
+                        enemies.push({
+                            type: 'hunter',
+                            gridX: col,
+                            gridY: row,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
+                            maxHp: 3,
+                            hp: 3,
+                            speed: 1.8,
+                            state: 'patrol',
+                            charge: 0,
+                            chargeDir: { x: 0, y: 0 },
+                            isDashing: false,
+                            dashTimer: 0,
+                            dashCooldown: 140,
+                            cooldownTimer: 0,
+                            scaleX: 1,
+                            scaleY: 1,
+                            angle: 0,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
                     } else {
-                        // Nemico Standard Rosso Inseguitore (IA+)
+                        // Standard Rosso
                         enemies.push({
                             type: 'standard',
                             gridX: col,
                             gridY: row,
-                            x: col * cellSize + (cellSize - cellSize * 0.75) / 2,
-                            y: row * cellSize + (cellSize - cellSize * 0.75) / 2,
-                            size: cellSize * 0.75,
+                            x: initX,
+                            y: initY,
+                            size: enemySize,
                             maxHp: 3,
                             hp: 3,
-                            speed: 1.6 + Math.random() * 0.6, 
-                            
-                            state: 'patrol', 
-                            charge: 0,       
+                            speed: 1.6 + Math.random() * 0.6,
+                            state: 'patrol',
+                            charge: 0,
                             chargeDir: { x: 0, y: 0 },
                             isDashing: false,
                             dashTimer: 0,
-                            dashCooldown: Math.floor(120 + Math.random() * 120), // ARROTONDATO A INTERO PER FISSARE IL BUG
+                            dashCooldown: Math.floor(120 + Math.random() * 120),
                             cooldownTimer: 0,
-
                             scaleX: 1,
                             scaleY: 1,
                             angle: 0,
@@ -475,24 +680,6 @@
                         });
                     }
                 }
-            }
-        }
-
-        // Particelle grafiche per feedback scontri (scintille energetiche geometriche)
-        function spawnParticles(x, y, color, count = 12) {
-            for (let i = 0; i < count; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 2 + Math.random() * 5;
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    size: 3 + Math.random() * 4,
-                    color: color,
-                    alpha: 1,
-                    life: 0.95 + Math.random() * 0.05
-                });
             }
         }
 
@@ -509,32 +696,6 @@
             if (player.hp <= 0) {
                 triggerGameOver();
             }
-        }
-
-        // Schermata Sconfitta
-        function triggerGameOver() {
-            isGameRunning = false;
-            gameoverOverlay.classList.remove('hidden');
-            setTimeout(() => {
-                gameoverOverlay.style.opacity = '1';
-            }, 50);
-        }
-
-        // Reset completo al Game Over
-        function resetGame() {
-            floorLevel = 1;
-            floorCounter.textContent = floorLevel;
-            player.hp = 100;
-            player.gridX = 4;
-            player.gridY = 4;
-            resetPlayerCoords();
-            
-            gameoverOverlay.style.opacity = '0';
-            setTimeout(() => {
-                gameoverOverlay.classList.add('hidden');
-                generateFloor();
-                isGameRunning = true;
-            }, 300);
         }
 
         // Innesca l'effetto gelatina (squash & stretch) sul giocatore
@@ -689,7 +850,7 @@
 
                 // Forza l'allineamento di tutti i nemici alla griglia
                 enemies.forEach(e => {
-                    if (e.type === 'standard') {
+                    if (e.type !== 'cycler' && e.type !== 'gravitor') {
                         e.angle = Math.PI / 4;
                     }
                     e.gridX = Math.round(e.x / cellSize);
@@ -704,7 +865,7 @@
                         easing: 'easeOutCubic'
                     });
                     
-                    if (e.type !== 'cycler') {
+                    if (e.type !== 'cycler' && e.type !== 'gravitor') {
                         e.state = 'patrol';
                         e.charge = 0;
                     }
@@ -1015,32 +1176,46 @@
                     enemy.hp = Math.max(0, enemy.hp - 1);
                     shakeAmount = 10; 
 
-                    // Spinge indietro il nemico (Fisica di contraccolpo, solo per non-cycler o se la cella è libera)
-                    const kbDist = cellSize * 0.75;
-                    const kbX = enemy.x + dirX * kbDist;
-                    const kbY = enemy.y + dirY * kbDist;
+                    // Spinge indietro il nemico (Fisica di contraccolpo, tranne per Gravitor)
+                    if (enemy.type !== 'gravitor') {
+                        const kbDist = cellSize * 0.75;
+                        const kbX = enemy.x + dirX * kbDist;
+                        const kbY = enemy.y + dirY * kbDist;
 
-                    if (!hitsWall(kbX, kbY, enemy.size)) {
-                        anime({
-                            targets: enemy,
-                            x: kbX,
-                            y: kbY,
-                            duration: 180,
-                            easing: 'easeOutQuad',
-                            complete: () => {
-                                enemy.gridX = Math.round(enemy.x / cellSize);
-                                enemy.gridY = Math.round(enemy.y / cellSize);
-                            }
-                        });
+                        if (!hitsWall(kbX, kbY, enemy.size)) {
+                            anime({
+                                targets: enemy,
+                                x: kbX,
+                                y: kbY,
+                                duration: 180,
+                                easing: 'easeOutQuad',
+                                complete: () => {
+                                    enemy.gridX = Math.round(enemy.x / cellSize);
+                                    enemy.gridY = Math.round(enemy.y / cellSize);
+                                }
+                            });
+                        }
                     }
 
                     // Frammenti di energia geometrica
-                    const particleColor = enemy.type === 'cycler' ? '#fb923c' : '#f87171';
+                    let particleColor = '#f87171';
+                    if (enemy.type === 'cycler') particleColor = '#fb923c';
+                    else if (enemy.type === 'berserker') particleColor = '#ef4444';
+                    else if (enemy.type === 'tank') particleColor = '#fca5a5';
+                    else if (enemy.type === 'hunter') particleColor = '#818cf8';
+                    else if (enemy.type === 'gravitor') particleColor = '#c084fc';
+
                     spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, particleColor, 12);
 
                     // Se il nemico viene sconfitto, innesca la disintegrazione
                     if (enemy.hp <= 0) {
-                        spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, particleColor === '#fb923c' ? '#f97316' : '#ef4444', 30);
+                        spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, particleColor, 30);
+                        
+                        // Rimuove stato di avviso se muore il gravitor attivo
+                        if (enemy.type === 'gravitor') {
+                            globalRotationWarning = false;
+                        }
+
                         setTimeout(() => {
                             enemies = enemies.filter(e => e !== enemy);
                             checkFloorCompletion();
@@ -1062,15 +1237,15 @@
 
         // --- LOGICA E IA DEI NEMICI ---
 
-        // Funzione per verificare collisione letale del nemico ciclico con il player
-        function checkCyclerCollisionWithPlayer(enemy) {
+        // Funzione per verificare collisione letale con il player
+        function checkEnemyCollisionWithPlayer(enemy, dmg = 20) {
             const playerCenterX = player.x + player.size/2;
             const playerCenterY = player.y + player.size/2;
             const enemyCenterX = enemy.x + enemy.size/2;
             const enemyCenterY = enemy.y + enemy.size/2;
             const dist = Math.hypot(playerCenterX - enemyCenterX, playerCenterY - enemyCenterY);
             if (dist < (player.size/2 + enemy.size/2)) {
-                damagePlayer(20); // Infligge 20 danni al nucleo del player
+                damagePlayer(dmg); 
             }
         }
 
@@ -1079,7 +1254,6 @@
             if (enemy.hp <= 0 || enemy.isAnimating) return;
 
             if (enemy.cyclerState === 'dash') {
-                // Calcola il punto di atterraggio dello scatto (fino a 3 celle prima di un muro)
                 let targetCol = enemy.gridX;
                 let targetRow = enemy.gridY;
                 const maxDash = 3;
@@ -1096,7 +1270,6 @@
                     targetRow = nextRow;
                 }
 
-                // Se è bloccato immediatamente, passa direttamente alla fase di rotazione
                 if (targetCol === enemy.gridX && targetRow === enemy.gridY) {
                     enemy.cyclerState = 'rotate';
                     advanceCycler(enemy);
@@ -1109,7 +1282,7 @@
                 const destX = targetCol * cellSize + (cellSize - enemy.size) / 2;
                 const destY = targetRow * cellSize + (cellSize - enemy.size) / 2;
 
-                // Animazione vincolata alla griglia usando sempre OutBounce
+                // Animazione vincolata alla griglia usando OutBounce
                 anime({
                     targets: enemy,
                     x: destX,
@@ -1117,7 +1290,7 @@
                     duration: 380,
                     easing: 'easeOutBounce',
                     change: () => {
-                        checkCyclerCollisionWithPlayer(enemy);
+                        checkEnemyCollisionWithPlayer(enemy, 20);
                     },
                     complete: () => {
                         enemy.gridX = targetCol;
@@ -1125,19 +1298,16 @@
                         enemy.isAnimating = false;
                         enemy.isDashing = false;
                         enemy.cyclerState = 'idle_after_dash';
-                        // Pausa dopo lo scatto (breve pausa oraria in modalità libera, immediata in Snap)
                         enemy.timer = snapMode ? 0 : 35;
                     }
                 });
 
             } else if (enemy.cyclerState === 'idle_after_dash') {
-                // Passa alla rotazione
                 enemy.cyclerState = 'rotate';
                 advanceCycler(enemy);
 
             } else if (enemy.cyclerState === 'rotate') {
-                // Trova la prima direzione non ostruita girando in senso orario
-                const CLOCKWISE_DIRS = [{x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}]; // Su, Destra, Giù, Sinistra
+                const CLOCKWISE_DIRS = [{x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}]; 
                 let currIdx = CLOCKWISE_DIRS.findIndex(d => d.x === enemy.dir.x && d.y === enemy.dir.y);
                 if (currIdx === -1) currIdx = 1;
 
@@ -1158,7 +1328,6 @@
                     let targetAngle = Math.atan2(foundDir.y, foundDir.x);
                     
                     enemy.isAnimating = true;
-                    // Rotazione visiva fluida
                     anime({
                         targets: enemy,
                         angle: targetAngle,
@@ -1167,183 +1336,259 @@
                         complete: () => {
                             enemy.isAnimating = false;
                             enemy.cyclerState = 'idle_after_rotate';
-                            enemy.timer = snapMode ? 0 : 30; // Pausa dopo essersi ruotato
+                            enemy.timer = snapMode ? 0 : 30; 
                         }
                     });
                 } else {
-                    // Completamente intrappolato: aspetta e riprova nel prossimo ciclo
                     enemy.cyclerState = 'idle_after_rotate';
                     enemy.timer = snapMode ? 0 : 30;
                 }
 
             } else if (enemy.cyclerState === 'idle_after_rotate') {
-                // Pronto per il prossimo scatto
                 enemy.cyclerState = 'dash';
                 advanceCycler(enemy);
             }
         }
 
-        // IA in modalità continua (Libera) con Obstacle Avoidance & Separation
+        // IA in modalità continua (Libera) con comportamenti avanzati per tutte le minacce
         function updateFreeEnemies() {
             enemies.forEach(enemy => {
                 if (enemy.hp <= 0) return;
 
                 if (enemy.type === 'cycler') {
-                    // Aggiornamento Nemico Ciclico Arancione su timer
                     if (enemy.isAnimating) {
-                        checkCyclerCollisionWithPlayer(enemy);
+                        checkEnemyCollisionWithPlayer(enemy, 20);
                         return;
                     }
-
                     if (enemy.timer > 0) {
                         enemy.timer--;
                     } else {
                         advanceCycler(enemy);
                     }
-                } else {
-                    // --- IA AVANZATA NEMICO INSEGUITORE ROSSO ---
-                    if (enemy.cooldownTimer > 0) {
-                        enemy.cooldownTimer--;
+                    return;
+                }
+
+                if (enemy.type === 'gravitor') {
+                    // --- COMPORTAMENTO GRAVITOR IN LIBERA ---
+                    enemy.timer--;
+                    if (enemy.timer <= 60 && !enemy.isWarning) {
+                        enemy.isWarning = true;
+                        globalRotationWarning = true; // Inizia il preavviso visivo viola
                     }
 
-                    // 1. Calcolo del distanziamento reciproco (Separation force) per non sovrapporsi
-                    let sepX = 0;
-                    let sepY = 0;
-                    let sepCount = 0;
-                    enemies.forEach(other => {
-                        if (other === enemy || other.hp <= 0) return;
-                        const distOther = Math.hypot(enemy.x - other.x, enemy.y - other.y);
-                        const minBuffer = enemy.size * 1.5; // Distanza minima di comfort tra i nemici
-                        if (distOther < minBuffer && distOther > 0) {
-                            sepX += (enemy.x - other.x) / distOther;
-                            sepY += (enemy.y - other.y) / distOther;
-                            sepCount++;
-                        }
-                    });
+                    if (enemy.timer <= 0) {
+                        // Sgancia l'impulso gravitazionale ruotando l'universo
+                        enemy.isWarning = false;
+                        globalRotationWarning = false;
+                        enemy.timer = 400 + Math.random() * 120; // reset cooldown (~7 secondi)
 
-                    if (sepCount > 0) {
-                        sepX /= sepCount;
-                        sepY /= sepCount;
-                        const sepLen = Math.hypot(sepX, sepY);
-                        if (sepLen > 0) {
-                            // Assegna un peso alla forza di spinta reciproca
-                            sepX = (sepX / sepLen) * enemy.speed * 0.75;
-                            sepY = (sepY / sepLen) * enemy.speed * 0.75;
-                        }
+                        // Sceglie rotazione casuale di +90° o -90°
+                        const rotateDir = Math.random() < 0.5 ? Math.PI/2 : -Math.PI/2;
+                        
+                        // Effetto onda energetica viola
+                        spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, '#c084fc', 25);
+                        shakeAmount = 18;
+
+                        anime({
+                            targets: rotationState,
+                            angle: rotationState.angle + rotateDir,
+                            duration: 1000,
+                            easing: 'cubicBezier(0.77, 0, 0.175, 1)' // Magnifico transizione Bezier elastica/morbida
+                        });
+                    }
+                    return;
+                }
+
+                // --- IA PER INSEGUITORI, BERSERKER, TANK E CACCIATORE ---
+                if (enemy.cooldownTimer > 0) {
+                    enemy.cooldownTimer--;
+                }
+
+                // Forza di separazione reciproca
+                let sepX = 0, sepY = 0, sepCount = 0;
+                enemies.forEach(other => {
+                    if (other === enemy || other.hp <= 0) return;
+                    const distOther = Math.hypot(enemy.x - other.x, enemy.y - other.y);
+                    const minBuffer = enemy.size * 1.5;
+                    if (distOther < minBuffer && distOther > 0) {
+                        sepX += (enemy.x - other.x) / distOther;
+                        sepY += (enemy.y - other.y) / distOther;
+                        sepCount++;
+                    }
+                });
+
+                if (sepCount > 0) {
+                    sepX /= sepCount;
+                    sepY /= sepCount;
+                    const sepLen = Math.hypot(sepX, sepY);
+                    if (sepLen > 0) {
+                        sepX = (sepX / sepLen) * enemy.speed * 0.75;
+                        sepY = (sepY / sepLen) * enemy.speed * 0.75;
+                    }
+                }
+
+                const dx = (player.x + player.size/2) - (enemy.x + enemy.size/2);
+                const dy = (player.y + player.size/2) - (enemy.y + enemy.size/2);
+                const dist = Math.hypot(dx, dy);
+
+                if (enemy.state === 'patrol' || enemy.state === 'chase') {
+                    if (dist < 280) {
+                        enemy.state = 'chase';
                     }
 
-                    const dx = (player.x + player.size/2) - (enemy.x + enemy.size/2);
-                    const dy = (player.y + player.size/2) - (enemy.y + enemy.size/2);
-                    const dist = Math.hypot(dx, dy);
+                    if (enemy.state === 'chase') {
+                        let moveAngle = Math.atan2(dy, dx);
+                        let isAligned = false;
 
-                    if (enemy.state === 'patrol' || enemy.state === 'chase') {
-                        if (dist < 260) {
-                            enemy.state = 'chase';
-                        }
-
-                        if (enemy.state === 'chase') {
-                            // 2. Algoritmo di scansione ostacoli (Obstacle Avoidance a raggiera)
-                            const targetAngle = Math.atan2(dy, dx);
-                            let moveAngle = targetAngle;
-                            let foundPath = false;
-
-                            // Proviamo diverse angolazioni sfalsate in cerca di un percorso non ostruito
-                            const testOffsets = [0, Math.PI/8, -Math.PI/8, Math.PI/4, -Math.PI/4, Math.PI/2.5, -Math.PI/2.5, Math.PI/2, -Math.PI/2];
-                            
-                            for (let offset of testOffsets) {
-                                const checkAngle = targetAngle + offset;
-                                const testVx = Math.cos(checkAngle) * enemy.speed;
-                                const testVy = Math.sin(checkAngle) * enemy.speed;
-
-                                // Verifica collisione un po' più avanti nel tempo per anticipare gli ostacoli
-                                if (!hitsWall(enemy.x + testVx * 2.5, enemy.y + testVy * 2.5, enemy.size)) {
-                                    moveAngle = checkAngle;
-                                    foundPath = true;
-                                    break;
+                        if (enemy.type === 'hunter') {
+                            // --- LOGICA ALLINEAMENTO CACCIATORE ---
+                            // Tenta di posizionarsi sull'asse orizzontale o verticale perfetto del player
+                            const alignmentThreshold = 18;
+                            if (Math.abs(dx) < Math.abs(dy)) {
+                                // Cerca l'allineamento orizzontale sull'asse X
+                                const alignX = (player.x + player.size/2) - (enemy.x + enemy.size/2);
+                                if (Math.abs(alignX) > alignmentThreshold) {
+                                    moveAngle = Math.atan2(0, alignX);
+                                } else {
+                                    isAligned = true;
+                                    moveAngle = Math.atan2(dy, 0); // Punta verticalmente
+                                }
+                            } else {
+                                // Cerca l'allineamento verticale sull'asse Y
+                                const alignY = (player.y + player.size/2) - (enemy.y + enemy.size/2);
+                                if (Math.abs(alignY) > alignmentThreshold) {
+                                    moveAngle = Math.atan2(alignY, 0);
+                                } else {
+                                    isAligned = true;
+                                    moveAngle = Math.atan2(0, dx); // Punta orizzontalmente
                                 }
                             }
+                        }
 
-                            // Direzione di inseguimento base + evasione muri
-                            let vx = Math.cos(moveAngle) * enemy.speed;
-                            let vy = Math.sin(moveAngle) * enemy.speed;
+                        // Evitamento muri a raggiera (Obstacle Avoidance)
+                        let foundPath = false;
+                        const testOffsets = [0, Math.PI/8, -Math.PI/8, Math.PI/4, -Math.PI/4, Math.PI/2.5, -Math.PI/2.5];
+                        for (let offset of testOffsets) {
+                            const checkAngle = moveAngle + offset;
+                            const testVx = Math.cos(checkAngle) * enemy.speed;
+                            const testVy = Math.sin(checkAngle) * enemy.speed;
 
-                            // Combina il vettore di inseguimento con la forza di separazione dagli altri nemici
-                            vx += sepX;
-                            vy += sepY;
-
-                            // Normalizza la velocità finale per non superare il limite massimo dell'IA
-                            const currentLen = Math.hypot(vx, vy);
-                            if (currentLen > 0) {
-                                vx = (vx / currentLen) * enemy.speed;
-                                vy = (vy / currentLen) * enemy.speed;
+                            if (!hitsWall(enemy.x + testVx * 2.8, enemy.y + testVy * 2.8, enemy.size)) {
+                                moveAngle = checkAngle;
+                                foundPath = true;
+                                break;
                             }
+                        }
 
-                            const nextX = enemy.x + vx;
-                            const nextY = enemy.y + vy;
+                        let vx = Math.cos(moveAngle) * enemy.speed;
+                        let vy = Math.sin(moveAngle) * enemy.speed;
 
-                            // Spostamento controllato
-                            if (!hitsWall(nextX, enemy.y, enemy.size)) {
-                                enemy.x = nextX;
-                            }
-                            if (!hitsWall(enemy.x, nextY, enemy.size)) {
-                                enemy.y = nextY;
-                            }
+                        vx += sepX;
+                        vy += sepY;
 
-                            enemy.gridX = Math.round(enemy.x / cellSize);
-                            enemy.gridY = Math.round(enemy.y / cellSize);
-                            
-                            enemy.angle = Math.atan2(vy, vx);
+                        const currentLen = Math.hypot(vx, vy);
+                        if (currentLen > 0) {
+                            vx = (vx / currentLen) * enemy.speed;
+                            vy = (vy / currentLen) * enemy.speed;
+                        }
 
-                            // Attacco se vicino
-                            if (dist < 130 && enemy.cooldownTimer <= 0) {
+                        const nextX = enemy.x + vx;
+                        const nextY = enemy.y + vy;
+
+                        if (!hitsWall(nextX, enemy.y, enemy.size)) enemy.x = nextX;
+                        if (!hitsWall(enemy.x, nextY, enemy.size)) enemy.y = nextY;
+
+                        enemy.gridX = Math.round(enemy.x / cellSize);
+                        enemy.gridY = Math.round(enemy.y / cellSize);
+                        enemy.angle = Math.atan2(vy, vx);
+
+                        // --- ATTIVAZIONE ATTACCHI / CARICHE ---
+                        if (enemy.cooldownTimer <= 0) {
+                            if (enemy.type === 'hunter' && isAligned && dist < 180) {
+                                enemy.state = 'charge';
+                                enemy.charge = 0;
+                                enemy.chargeDir.x = Math.cos(moveAngle);
+                                enemy.chargeDir.y = Math.sin(moveAngle);
+                            } else if (enemy.type === 'berserker' && dist < 200) {
+                                enemy.state = 'charge';
+                                enemy.charge = 0;
+                                enemy.chargeDir.x = dx / dist;
+                                enemy.chargeDir.y = dy / dist;
+                            } else if (enemy.type === 'tank' && dist < 95) {
+                                enemy.state = 'charge';
+                                enemy.charge = 0;
+                                enemy.chargeDir.x = dx / dist;
+                                enemy.chargeDir.y = dy / dist;
+                            } else if (enemy.type === 'standard' && dist < 125) {
                                 enemy.state = 'charge';
                                 enemy.charge = 0;
                                 enemy.chargeDir.x = dx / dist;
                                 enemy.chargeDir.y = dy / dist;
                             }
                         }
-                    } else if (enemy.state === 'charge') {
-                        enemy.charge = Math.min(1.0, enemy.charge + 0.02); 
-                        enemy.angle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
+                    }
+                } else if (enemy.state === 'charge') {
+                    // Carica attacco
+                    const chargeSpeed = enemy.type === 'berserker' ? 0.04 : (enemy.type === 'tank' ? 0.015 : 0.02);
+                    enemy.charge = Math.min(1.0, enemy.charge + chargeSpeed);
+                    enemy.angle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
 
-                        if (enemy.charge >= 1.0) {
-                            enemy.state = 'dash';
-                            enemy.dashTimer = 15; 
-                            enemy.isDashing = true;
+                    if (enemy.charge >= 1.0) {
+                        enemy.state = 'dash';
+                        enemy.isDashing = true;
+
+                        // Definisce parametri dello scatto
+                        if (enemy.type === 'berserker') {
+                            enemy.dashTimer = 25; // Scatto lunghissimo
+                            enemy.dashSpeed = 12;
+                        } else if (enemy.type === 'tank') {
+                            enemy.dashTimer = 10; // Scatto corto e pesante
+                            enemy.dashSpeed = 7;
+                        } else if (enemy.type === 'hunter') {
+                            enemy.dashTimer = 18; // Scatto super preciso e veloce
+                            enemy.dashSpeed = 11;
+                        } else {
+                            enemy.dashTimer = 15;
+                            enemy.dashSpeed = 10;
                         }
-                    } else if (enemy.state === 'dash') {
-                        const dashSpeed = 10;
-                        const vx = enemy.chargeDir.x * dashSpeed;
-                        const vy = enemy.chargeDir.y * dashSpeed;
+                    }
+                } else if (enemy.state === 'dash') {
+                    // Esecuzione fisica dello scatto
+                    const vx = enemy.chargeDir.x * enemy.dashSpeed;
+                    const vy = enemy.chargeDir.y * enemy.dashSpeed;
 
-                        const nextX = enemy.x + vx;
-                        const nextY = enemy.y + vy;
+                    const nextX = enemy.x + vx;
+                    const nextY = enemy.y + vy;
 
-                        const playerDist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
-                        if (playerDist < (player.size/2 + enemy.size/2)) {
-                            damagePlayer(25); 
+                    const playerDist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
+                    
+                    if (playerDist < (player.size/2 + enemy.size/2)) {
+                        // Colpito!
+                        const dmg = enemy.type === 'tank' ? 35 : (enemy.type === 'berserker' ? 15 : 25);
+                        damagePlayer(dmg);
+
+                        enemy.state = 'patrol';
+                        enemy.isDashing = false;
+                        enemy.cooldownTimer = enemy.dashCooldown;
+                    } else if (!hitsWall(nextX, nextY, enemy.size)) {
+                        enemy.x = nextX;
+                        enemy.y = nextY;
+                        enemy.dashTimer--;
+
+                        if (enemy.dashTimer <= 0) {
                             enemy.state = 'patrol';
                             enemy.isDashing = false;
                             enemy.cooldownTimer = enemy.dashCooldown;
-                        } else if (!hitsWall(nextX, nextY, enemy.size)) {
-                            enemy.x = nextX;
-                            enemy.y = nextY;
-                            enemy.dashTimer--;
-
-                            if (enemy.dashTimer <= 0) {
-                                enemy.state = 'patrol';
-                                enemy.isDashing = false;
-                                enemy.cooldownTimer = enemy.dashCooldown;
-                            }
-                        } else {
-                            const hitCol = Math.floor((enemy.x + enemy.size/2 + enemy.chargeDir.x * 12) / cellSize);
-                            const hitRow = Math.floor((enemy.y + enemy.size/2 + enemy.chargeDir.y * 12) / cellSize);
-                            triggerWallHit(enemy.chargeDir.x, enemy.chargeDir.y, hitCol, hitRow);
-
-                            enemy.state = 'patrol';
-                            enemy.isDashing = false;
-                            enemy.cooldownTimer = enemy.dashCooldown + 60; 
                         }
+                    } else {
+                        // Scontro con il muro
+                        const hitCol = Math.floor((enemy.x + enemy.size/2 + enemy.chargeDir.x * 12) / cellSize);
+                        const hitRow = Math.floor((enemy.y + enemy.size/2 + enemy.chargeDir.y * 12) / cellSize);
+                        triggerWallHit(enemy.chargeDir.x, enemy.chargeDir.y, hitCol, hitRow);
+
+                        enemy.state = 'patrol';
+                        enemy.isDashing = false;
+                        enemy.cooldownTimer = enemy.dashCooldown + 60; // sanzione di stordimento
                     }
                 }
             });
@@ -1355,133 +1600,155 @@
                 if (enemy.hp <= 0) return;
 
                 if (enemy.type === 'cycler') {
-                    // Avanza il ciclo di 1 passo discreto per turno
                     advanceCycler(enemy);
-                } else {
-                    // --- IA ROSSA TURN-BASED CON EVASIONE E SEPARAZIONE ---
-                    const colDist = player.gridX - enemy.gridX;
-                    const rowDist = player.gridY - enemy.gridY;
-                    const dist = Math.abs(colDist) + Math.abs(rowDist);
+                    return;
+                }
 
-                    if (enemy.state === 'charge') {
-                        let snapDirX = 0, snapDirY = 0;
-                        if (Math.abs(enemy.chargeDir.x) > Math.abs(enemy.chargeDir.y)) {
-                            snapDirX = enemy.chargeDir.x > 0 ? 1 : -1;
-                        } else {
-                            snapDirY = enemy.chargeDir.y > 0 ? 1 : -1;
-                        }
-
-                        const dashDistance = 4; 
-                        let finalCol = enemy.gridX;
-                        let finalRow = enemy.gridY;
-                        let hitWall = false;
-                        let hitPlayer = false;
-
-                        for (let i = 1; i <= dashDistance; i++) {
-                            const testCol = enemy.gridX + snapDirX * i;
-                            const testRow = enemy.gridY + snapDirY * i;
-
-                            if (testCol === player.gridX && testRow === player.gridY) {
-                                hitPlayer = true;
-                                finalCol = testCol - snapDirX;
-                                finalRow = testRow - snapDirY;
-                                break;
-                            }
-
-                            const isWall = isCellBlocked(testCol, testRow);
-                            if (isWall) {
-                                hitWall = true;
-                                finalCol = testCol - snapDirX;
-                                finalRow = testRow - snapDirY;
-                                break;
-                            }
-
-                            finalCol = testCol;
-                            finalRow = testRow;
-                        }
-
-                        enemy.gridX = finalCol;
-                        enemy.gridY = finalRow;
-
-                        const destX = finalCol * cellSize + (cellSize - enemy.size) / 2;
-                        const destY = finalRow * cellSize + (cellSize - enemy.size) / 2;
-
+                if (enemy.type === 'gravitor') {
+                    // Gravitor non esegue turni fisici, incrementa solo il timer di rotazione
+                    enemy.timer -= 15; // Scala più rapidamente in griglia
+                    if (enemy.timer <= 60 && !enemy.isWarning) {
+                        enemy.isWarning = true;
+                        globalRotationWarning = true;
+                    }
+                    if (enemy.timer <= 0) {
+                        enemy.isWarning = false;
+                        globalRotationWarning = false;
+                        enemy.timer = 300 + Math.random() * 100;
+                        const rotateDir = Math.random() < 0.5 ? Math.PI/2 : -Math.PI/2;
+                        spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, '#c084fc', 25);
+                        shakeAmount = 18;
                         anime({
-                            targets: enemy,
-                            x: destX,
-                            y: destY,
-                            duration: 220,
-                            easing: 'easeOutQuad',
-                            complete: () => {
-                                enemy.x = destX;
-                                enemy.y = destY;
-                                enemy.state = 'patrol';
-                                enemy.charge = 0;
+                            targets: rotationState,
+                            angle: rotationState.angle + rotateDir,
+                            duration: 1000,
+                            easing: 'cubicBezier(0.77, 0, 0.175, 1)'
+                        });
+                    }
+                    return;
+                }
 
-                                if (hitPlayer) {
-                                    damagePlayer(30); 
-                                }
-                                if (hitWall) {
-                                    triggerWallHit(snapDirX, snapDirY, finalCol + snapDirX, finalRow + snapDirY);
-                                }
+                // --- INSEGUITORI DI GRIGLIA ---
+                const colDist = player.gridX - enemy.gridX;
+                const rowDist = player.gridY - enemy.gridY;
+                const dist = Math.abs(colDist) + Math.abs(rowDist);
+
+                if (enemy.state === 'charge') {
+                    let snapDirX = 0, snapDirY = 0;
+                    if (Math.abs(enemy.chargeDir.x) > Math.abs(enemy.chargeDir.y)) {
+                        snapDirX = enemy.chargeDir.x > 0 ? 1 : -1;
+                    } else {
+                        snapDirY = enemy.chargeDir.y > 0 ? 1 : -1;
+                    }
+
+                    // Berserker scatta di 6 celle, Tank di 2, altri di 4
+                    const dashDistance = enemy.type === 'berserker' ? 6 : (enemy.type === 'tank' ? 2 : 4); 
+                    let finalCol = enemy.gridX;
+                    let finalRow = enemy.gridY;
+                    let hitWall = false;
+                    let hitPlayer = false;
+
+                    for (let i = 1; i <= dashDistance; i++) {
+                        const testCol = enemy.gridX + snapDirX * i;
+                        const testRow = enemy.gridY + snapDirY * i;
+
+                        if (testCol === player.gridX && testRow === player.gridY) {
+                            hitPlayer = true;
+                            finalCol = testCol - snapDirX;
+                            finalRow = testRow - snapDirY;
+                            break;
+                        }
+
+                        const isWall = isCellBlocked(testCol, testRow);
+                        if (isWall) {
+                            hitWall = true;
+                            finalCol = testCol - snapDirX;
+                            finalRow = testRow - snapDirY;
+                            break;
+                        }
+
+                        finalCol = testCol;
+                        finalRow = testRow;
+                    }
+
+                    enemy.gridX = finalCol;
+                    enemy.gridY = finalRow;
+
+                    const destX = finalCol * cellSize + (cellSize - enemy.size) / 2;
+                    const destY = finalRow * cellSize + (cellSize - enemy.size) / 2;
+
+                    anime({
+                        targets: enemy,
+                        x: destX,
+                        y: destY,
+                        duration: 220,
+                        easing: 'easeOutQuad',
+                        complete: () => {
+                            enemy.x = destX;
+                            enemy.y = destY;
+                            enemy.state = 'patrol';
+                            enemy.charge = 0;
+
+                            if (hitPlayer) {
+                                const dmg = enemy.type === 'tank' ? 40 : (enemy.type === 'berserker' ? 20 : 30);
+                                damagePlayer(dmg); 
                             }
+                            if (hitWall) {
+                                triggerWallHit(snapDirX, snapDirY, finalCol + snapDirX, finalRow + snapDirY);
+                            }
+                        }
+                    });
+
+                } else {
+                    // Controlla linea di mira per caricare
+                    const inLineOfSight = (player.gridX === enemy.gridX || player.gridY === enemy.gridY) && dist <= (enemy.type === 'berserker' ? 7 : 5);
+
+                    if (inLineOfSight) {
+                        enemy.state = 'charge';
+                        enemy.charge = 1.0;
+                        const len = Math.hypot(colDist, rowDist);
+                        enemy.chargeDir.x = colDist / len;
+                        enemy.chargeDir.y = rowDist / len;
+                    } else {
+                        // Sceglie mossa logica
+                        const targetSteps = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+                        let validMoves = [];
+
+                        targetSteps.forEach(step => {
+                            const nextCol = enemy.gridX + step.x;
+                            const nextRow = enemy.gridY + step.y;
+
+                            if (isCellBlocked(nextCol, nextRow)) return;
+
+                            const isOccupied = enemies.some(e => e !== enemy && e.hp > 0 && e.gridX === nextCol && e.gridY === nextRow);
+                            if (isOccupied) return;
+
+                            const futureDist = Math.hypot(player.gridX - nextCol, player.gridY - nextRow);
+                            validMoves.push({ step, dist: futureDist });
                         });
 
-                    } else {
-                        const inLineOfSight = (player.gridX === enemy.gridX || player.gridY === enemy.gridY) && dist <= 5;
+                        validMoves.sort((a, b) => a.dist - b.dist);
 
-                        if (inLineOfSight) {
-                            enemy.state = 'charge';
-                            enemy.charge = 1.0;
-                            const len = Math.hypot(colDist, rowDist);
-                            enemy.chargeDir.x = colDist / len;
-                            enemy.chargeDir.y = rowDist / len;
-                        } else {
-                            // Algoritmo di scansione direzioni discrete con prevenzione ingorghi e collisioni ad angoli
-                            const targetSteps = [
-                                { x: 1, y: 0 },
-                                { x: -1, y: 0 },
-                                { x: 0, y: 1 },
-                                { x: 0, y: -1 }
-                            ];
+                        // Tank ha il 30% di probabilità di stare fermo ogni turno per indolenza
+                        if (enemy.type === 'tank' && Math.random() < 0.3) {
+                            return;
+                        }
 
-                            let validMoves = [];
+                        if (validMoves.length > 0) {
+                            const bestMove = validMoves[0].step;
+                            enemy.gridX += bestMove.x;
+                            enemy.gridY += bestMove.y;
 
-                            targetSteps.forEach(step => {
-                                const nextCol = enemy.gridX + step.x;
-                                const nextRow = enemy.gridY + step.y;
+                            const destX = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
+                            const destY = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
 
-                                // 1. Evita i muri e i limiti della mappa
-                                if (isCellBlocked(nextCol, nextRow)) return;
-
-                                // 2. Evita la sovrapposizione con altri nemici (Separazione in Griglia)
-                                const isOccupied = enemies.some(e => e !== enemy && e.hp > 0 && e.gridX === nextCol && e.gridY === nextRow);
-                                if (isOccupied) return;
-
-                                // 3. Calcola la distanza futura dal giocatore per ogni mossa valida
-                                const futureDist = Math.hypot(player.gridX - nextCol, player.gridY - nextRow);
-                                validMoves.push({ step, dist: futureDist });
+                            anime({
+                                targets: enemy,
+                                x: destX,
+                                y: destY,
+                                duration: 250,
+                                easing: 'easeOutCubic'
                             });
-
-                            // Ordina le mosse libere posizionando la più vicina al giocatore in cima
-                            validMoves.sort((a, b) => a.dist - b.dist);
-
-                            if (validMoves.length > 0) {
-                                const bestMove = validMoves[0].step;
-                                enemy.gridX += bestMove.x;
-                                enemy.gridY += bestMove.y;
-
-                                const destX = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
-                                const destY = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
-
-                                anime({
-                                    targets: enemy,
-                                    x: destX,
-                                    y: destY,
-                                    duration: 250,
-                                    easing: 'easeOutCubic'
-                                });
-                            }
                         }
                     }
                 }
@@ -1503,11 +1770,22 @@
                 shakeAmount *= shakeDecay;
             }
 
-            ctx.fillStyle = '#0b0f19';
+            // Sfondo standard o con flash di preavviso rotazione (Gravitor)
+            if (globalRotationWarning) {
+                ctx.fillStyle = '#2e104a'; // Viola intenso di avviso
+            } else {
+                ctx.fillStyle = '#0b0f19';
+            }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // --- APPLICA ROTAZIONE GLOBALE DEL CANVA (GRAVITOR) ---
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(rotationState.angle);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
             // 1. DISEGNA LA GRIGLIA SOTTOSTANTE
-            ctx.strokeStyle = snapMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+            ctx.strokeStyle = snapMode ? 'rgba(139, 92, 246, 0.18)' : 'rgba(255, 255, 255, 0.03)';
             ctx.lineWidth = 1;
             for (let c = 0; c <= GRID_COLS; c++) {
                 ctx.beginPath();
@@ -1568,9 +1846,9 @@
                     }
                 }
 
-                // Proiezione scatti IA standard (Rosso)
+                // Proiezione scatti IA standard, berserker, tank e cacciatore
                 enemies.forEach(enemy => {
-                    if (enemy.type !== 'cycler' && enemy.state === 'charge' && snapMode) {
+                    if (enemy.type !== 'cycler' && enemy.type !== 'gravitor' && enemy.state === 'charge' && snapMode) {
                         let snapDirX = 0, snapDirY = 0;
                         if (Math.abs(enemy.chargeDir.x) > Math.abs(enemy.chargeDir.y)) {
                             snapDirX = enemy.chargeDir.x > 0 ? 1 : -1;
@@ -1578,7 +1856,8 @@
                             snapDirY = enemy.chargeDir.y > 0 ? 1 : -1;
                         }
 
-                        const dashDistance = 4;
+                        // Berserker scatta di 6 celle, tank di 2, altri di 4
+                        const dashDistance = enemy.type === 'berserker' ? 6 : (enemy.type === 'tank' ? 2 : 4);
                         for (let i = 1; i <= dashDistance; i++) {
                             const targetCol = enemy.gridX + snapDirX * i;
                             const targetRow = enemy.gridY + snapDirY * i;
@@ -1657,7 +1936,7 @@
                 }
             });
 
-            // 5. DISEGNA I NEMICI (Inseguitori e Ciclici)
+            // 5. DISEGNA I NEMICI (Inseguitori, Ciclici, Berserker, Tank, Cacciatore, Gravitor)
             enemies.forEach(enemy => {
                 if (enemy.hp <= 0) return;
 
@@ -1690,6 +1969,7 @@
                     ctx.roundRect(-enemy.size/2, -enemy.size/2, enemy.size, enemy.size, 4);
                     ctx.fill();
 
+                    // Piccola freccia direzionale
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
                     ctx.beginPath();
                     ctx.moveTo(enemy.size/2 - 2, 0);
@@ -1697,11 +1977,61 @@
                     ctx.lineTo(enemy.size/4, enemy.size/5);
                     ctx.fill();
 
+                } else if (enemy.type === 'gravitor') {
+                    // --- DISEGNO NEMICO VIOLA GRAVITOR (STAZIONARIO) ---
+                    const r = Math.round(55 + 113 * healthRatio);
+                    const g = Math.round(10 + 75 * healthRatio);
+                    const b = Math.round(75 + 180 * healthRatio);
+
+                    // Anima una debole espansione pulsante
+                    const pulse = 1 + Math.sin(Date.now() / 150) * 0.08;
+                    ctx.scale(pulse, pulse);
+
+                    // Se sta per innescare l'impulso gravitazionale, vibra violentemente
+                    if (enemy.isWarning) {
+                        ctx.translate(Math.random() * 4 - 2, Math.random() * 4 - 2);
+                        ctx.fillStyle = '#d8b4fe'; // Lampeggia viola chiaro
+                    } else {
+                        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    }
+
+                    // Disegna una anomalia geometrica a diamante con nucleo concentrico
+                    ctx.rotate(Math.PI / 4 + (Date.now() / 1000));
+                    ctx.beginPath();
+                    ctx.roundRect(-enemy.size/2, -enemy.size/2, enemy.size, enemy.size, 6);
+                    ctx.fill();
+
+                    // Nucleo interno
+                    ctx.fillStyle = '#0b0f19';
+                    ctx.beginPath();
+                    ctx.roundRect(-enemy.size/4, -enemy.size/4, enemy.size/2, enemy.size/2, 4);
+                    ctx.fill();
+
                 } else {
-                    // --- DISEGNO NEMICO ROSSO STANDARD ---
-                    const r = Math.round(80 + 159 * healthRatio);
-                    const g = Math.round(20 * healthRatio);
-                    const b = Math.round(20 * healthRatio);
+                    // --- DISEGNO NEMICI ROSSO, ROSSO SCURO, ROSSO CHIARO, BLU-VIOLA ---
+                    let r = 239, g = 68, b = 68; // Standard
+
+                    if (enemy.type === 'berserker') {
+                        // Rosso Scuro
+                        r = Math.round(35 + 92 * healthRatio);
+                        g = Math.round(5 * healthRatio);
+                        b = Math.round(5 * healthRatio);
+                    } else if (enemy.type === 'tank') {
+                        // Rosso Chiaro / Rosa Massiccio
+                        r = Math.round(120 + 135 * healthRatio);
+                        g = Math.round(45 + 120 * healthRatio);
+                        b = Math.round(45 + 120 * healthRatio);
+                    } else if (enemy.type === 'hunter') {
+                        // Blu-Viola
+                        r = Math.round(30 + 69 * healthRatio);
+                        g = Math.round(30 + 72 * healthRatio);
+                        b = Math.round(110 + 145 * healthRatio);
+                    } else {
+                        // Standard Rosso
+                        r = Math.round(80 + 159 * healthRatio);
+                        g = Math.round(20 * healthRatio);
+                        b = Math.round(20 * healthRatio);
+                    }
 
                     let targetScaleX = 1;
                     let targetScaleY = 1;
@@ -1716,11 +2046,13 @@
                         }
                     } else { 
                         if (enemy.state === 'chase') {
-                            targetScaleX = 1.15;
-                            targetScaleY = 0.85;
+                            // Allungamento aerodinamico
+                            targetScaleX = enemy.type === 'tank' ? 1.08 : 1.15;
+                            targetScaleY = enemy.type === 'tank' ? 0.92 : 0.85;
                         } else if (enemy.state === 'charge') {
-                            targetScaleX = 1 - enemy.charge * 0.35;
-                            targetScaleY = 1 + enemy.charge * 0.45;
+                            // Compressione molla
+                            targetScaleX = 1 - enemy.charge * (enemy.type === 'berserker' ? 0.42 : 0.35);
+                            targetScaleY = 1 + enemy.charge * (enemy.type === 'berserker' ? 0.52 : 0.45);
                             drawAngle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
                         } else if (enemy.state === 'dash' || enemy.isDashing) {
                             targetScaleX = 1.45;
@@ -1741,7 +2073,7 @@
                     ctx.scale(enemy.scaleX, enemy.scaleY);
 
                     if (enemy.state === 'charge') {
-                        ctx.fillStyle = `rgb(245, 158, 11)`; 
+                        ctx.fillStyle = `rgb(245, 158, 11)`; // Avviso carica
                     } else {
                         ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                     }
@@ -1823,6 +2155,10 @@
                 }
             }
 
+            // Ripristina l'effetto di rotazione spaziale Gravitor
+            ctx.restore();
+
+            // Ripristina la traslazione per il tremolio schermo
             ctx.restore();
 
             // Aggiornamenti IA e movimento continuo
@@ -1931,6 +2267,16 @@
                 welcomeOverlay.classList.add('hidden');
                 isGameRunning = true;
             }, 300);
+        });
+
+        bestiaryOpenBtn.addEventListener('click', () => {
+            bestiaryOverlay.classList.remove('hidden');
+            bestiaryOverlay.classList.add('flex');
+        });
+
+        bestiaryCloseBtn.addEventListener('click', () => {
+            bestiaryOverlay.classList.add('hidden');
+            bestiaryOverlay.classList.remove('flex');
         });
 
         restartBtn.addEventListener('click', () => {
