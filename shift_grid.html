@@ -966,21 +966,28 @@
             }
         }
 
-        // Movimento in modalità Libera
+        // Movimento in modalità Libera (con rotazione adattiva dell'input)
         function updateFreeMovement() {
             if (player.isDashing) return;
-            let dx = 0;
-            let dy = 0;
+            let rawDx = 0;
+            let rawDy = 0;
 
-            if (keys['w'] || keys['arrowup']) dy -= player.speed;
-            if (keys['s'] || keys['arrowdown']) dy += player.speed;
-            if (keys['a'] || keys['arrowleft']) dx -= player.speed;
-            if (keys['d'] || keys['arrowright']) dx += player.speed;
+            if (keys['w'] || keys['arrowup']) rawDy -= player.speed;
+            if (keys['s'] || keys['arrowdown']) rawDy += player.speed;
+            if (keys['a'] || keys['arrowleft']) rawDx -= player.speed;
+            if (keys['d'] || keys['arrowright']) rawDx += player.speed;
 
-            if (dx !== 0 && dy !== 0) {
-                dx *= 0.7071;
-                dy *= 0.7071;
+            if (rawDx !== 0 && rawDy !== 0) {
+                rawDx *= 0.7071;
+                rawDy *= 0.7071;
             }
+
+            // APPLICAZIONE ROTAZIONE INVERSA ALL'INPUT DIREZIONALE
+            // Permette di adattare i tasti alla rotazione visiva corrente dello schermo
+            const cos = Math.cos(-rotationState.angle);
+            const sin = Math.sin(-rotationState.angle);
+            let dx = rawDx * cos - rawDy * sin;
+            let dy = rawDx * sin + rawDy * cos;
 
             const nextX = player.x + dx;
             if (!hitsWall(nextX, player.y, player.size)) {
@@ -995,7 +1002,7 @@
             player.gridX = Math.round(player.x / cellSize);
             player.gridY = Math.round(player.y / cellSize);
 
-            if (dx !== 0 || dy !== 0) {
+            if (rawDx !== 0 || rawDy !== 0) {
                 const len = Math.hypot(dx, dy);
                 player.lastDir.x = dx / len;
                 player.lastDir.y = dy / len;
@@ -1063,16 +1070,22 @@
             }
         }
 
+        // Rileva la direzione dello scatto dai tasti direzionali adattandosi alla rotazione
         function updateChargeDirectionFromKeys() {
-            let dx = 0;
-            let dy = 0;
+            let rawDx = 0;
+            let rawDy = 0;
 
-            if (keys['w'] || keys['arrowup']) dy -= 1;
-            if (keys['s'] || keys['arrowdown']) dy += 1;
-            if (keys['a'] || keys['arrowleft']) dx -= 1;
-            if (keys['d'] || keys['arrowright']) dx += 1;
+            if (keys['w'] || keys['arrowup']) rawDy -= 1;
+            if (keys['s'] || keys['arrowdown']) rawDy += 1;
+            if (keys['a'] || keys['arrowleft']) rawDx -= 1;
+            if (keys['d'] || keys['arrowright']) rawDx += 1;
 
-            if (dx !== 0 || dy !== 0) {
+            if (rawDx !== 0 || rawDy !== 0) {
+                // APPLICAZIONE ROTAZIONE INVERSA ALLA DIREZIONE DI MIRA/CARICA
+                const cos = Math.cos(-rotationState.angle);
+                const sin = Math.sin(-rotationState.angle);
+                let dx = rawDx * cos - rawDy * sin;
+                let dy = rawDx * sin + rawDy * cos;
                 const len = Math.hypot(dx, dy);
                 player.chargeDir.x = dx / len;
                 player.chargeDir.y = dy / len;
@@ -2218,7 +2231,12 @@
                     if (keys['a'] || keys['arrowleft']) inputX -= 1;
                     if (keys['d'] || keys['arrowright']) inputX += 1;
                     if (inputX !== 0 || inputY !== 0) {
-                        handleWallPushing(inputX, inputY);
+                        // APPLICAZIONE ROTAZIONE INVERSA DELLA SPINTA CONTINUA (SNAP MODE)
+                        const cos = Math.round(Math.cos(-rotationState.angle));
+                        const sin = Math.round(Math.sin(-rotationState.angle));
+                        let rotatedInputX = inputX * cos - inputY * sin;
+                        let rotatedInputY = inputX * sin + inputY * cos;
+                        handleWallPushing(rotatedInputX, rotatedInputY);
                     }
                 }
             }
@@ -2287,10 +2305,21 @@
             }
 
             if (snapMode) {
-                if (key === 'w' || key === 'arrowup') moveInSnap(0, -1);
-                if (key === 's' || key === 'arrowdown') moveInSnap(0, 1);
-                if (key === 'a' || key === 'arrowleft') moveInSnap(-1, 0);
-                if (key === 'd' || key === 'arrowright') moveInSnap(1, 0);
+                // APPLICAZIONE ROTAZIONE INVERSA DELL'INPUT IN MODALITÀ SNAP
+                let dirX = 0;
+                let dirY = 0;
+                if (key === 'w' || key === 'arrowup') dirY = -1;
+                if (key === 's' || key === 'arrowdown') dirY = 1;
+                if (key === 'a' || key === 'arrowleft') dirX = -1;
+                if (key === 'd' || key === 'arrowright') dirX = 1;
+
+                if (dirX !== 0 || dirY !== 0) {
+                    const cos = Math.round(Math.cos(-rotationState.angle));
+                    const sin = Math.round(Math.sin(-rotationState.angle));
+                    let rotatedDirX = dirX * cos - dirY * sin;
+                    let rotatedDirY = dirX * sin + dirY * cos;
+                    moveInSnap(rotatedDirX, rotatedDirY);
+                }
             }
         });
 
