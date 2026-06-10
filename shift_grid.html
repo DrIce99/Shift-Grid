@@ -697,6 +697,50 @@
                 triggerGameOver();
             }
         }
+        
+        // Schermata Sconfitta
+        function triggerGameOver() {
+            isGameRunning = false;
+            gameoverOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                gameoverOverlay.style.opacity = '1';
+            }, 50);
+        }
+
+        // Reset completo al Game Over
+        function resetGame() {
+            floorLevel = 1;
+            floorCounter.textContent = floorLevel;
+            player.hp = 100;
+            player.gridX = 4;
+            player.gridY = 4;
+            resetPlayerCoords();
+            
+            gameoverOverlay.style.opacity = '0';
+            setTimeout(() => {
+                gameoverOverlay.classList.add('hidden');
+                generateFloor();
+                isGameRunning = true;
+            }, 300);
+        }
+
+        // Particelle grafiche per feedback scontri (scintille energetiche geometriche)
+        function spawnParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 4,
+                    color: color,
+                    alpha: 1,
+                    life: 0.95 + Math.random() * 0.05
+                });
+            }
+        }
 
         // Innesca l'effetto gelatina (squash & stretch) sul giocatore
         function triggerPlayerJelly(dirX, dirY) {
