@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Grid</title>
+    <!-- Tailwind CSS per la UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Anime.js per le transizioni e animazioni fluide -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <!-- Lucide Icons per l'interfaccia -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #0b0f19;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Canvas container */
+        #canvas-container {
+            position: relative;
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+        }
+
+        /* Effetto Scanline nostalgico e minimale */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Animazione bagliore pulsante */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(255, 255, 255, 0.5); }
+        }
+        .player-glow {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen text-white p-4 md:p-6">
+
+    <!-- Header UI -->
+    <div class="w-full max-w-4xl flex flex-col md:flex-row justify-between items-center gap-4 z-20">
+        <div>
+            <h1 class="text-3xl md:text-4xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white">
+                SHIFT GRID <span class="text-xs font-mono px-2 py-1 bg-blue-900/40 text-blue-300 border border-blue-500/30 rounded">PRE-ALPHA</span>
+            </h1>
+            <p class="text-sm text-slate-400 mt-1">Sperimenta la fluidità del movimento libero e l'ordine dello Snap geometrico.</p>
+        </div>
+        
+        <!-- Stato Corrente -->
+        <div class="flex items-center gap-4 bg-slate-900/80 border border-slate-800 px-4 py-2 rounded-xl">
+            <!-- Punteggio / Livello -->
+            <div class="text-xs text-slate-400">
+                PIANO: <span id="floor-counter" class="text-cyan-400 font-bold">1</span>
+            </div>
+            <div class="h-4 w-px bg-slate-800"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 uppercase tracking-widest">Modalità:</span>
+                <div id="mode-badge" class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                    <span id="mode-text">LIBERA (Continuo)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area di Gioco Centrale -->
+    <div id="canvas-container" class="relative w-full max-w-3xl aspect-[4/3] bg-slate-950 border-2 border-slate-800 rounded-2xl overflow-hidden my-4">
+        <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+        <div class="scanlines rounded-2xl"></div>
+        
+        <!-- Schermata di Benvenuto / Overlay Istruzioni -->
+        <div id="welcome-overlay" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-30 transition-opacity duration-300">
+            <div class="max-w-md space-y-6">
+                <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="gamepad-2" class="w-8 h-8 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Benvenuto in Shift Grid</h2>
+                    <p class="text-slate-400 text-sm">I nemici rossi e arancioni cercheranno di eliminarti. Carica lo scatto e usalo per distruggerli impattando contro di loro!</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 text-left text-xs bg-slate-900/50 p-4 border border-slate-800 rounded-xl">
+                    <div class="space-y-2">
+                        <span class="text-cyan-400 font-semibold uppercase block">Movimento libero</span>
+                        <div class="flex items-center gap-2"><kbd class="px-2 py-1 bg-slate-800 rounded text-slate-300">W A S D</kbd> o <span class="text-slate-400">Frecce</span></div>
+                    </div>
+                    <div class="space-y-2">
+                        <span class="text-cyan-400 font-semibold uppercase block">Danno ai Nemici</span>
+                        <div class="text-slate-400">Effettua uno <span class="text-white font-semibold">Scatto Caricato</span> direttamente contro i nemici per danneggiarli.</div>
+                    </div>
+                    <div class="space-y-2 col-span-2 border-t border-slate-800 pt-2 mt-1">
+                        <span class="text-violet-400 font-semibold uppercase block">Tipologie di Nemici</span>
+                        <div class="text-slate-400">
+                            • <span class="text-red-400 font-semibold">Rosso (Inseguitore)</span>: IA avanzata con scansione degli ostacoli e distanziamento di gruppo.<br>
+                            • <span class="text-orange-400 font-semibold">Arancione (Ciclico)</span>: Si muove solo sulla griglia a rimbalzi d'azione orari.
+                        </div>
+                    </div>
+                </div>
+
+                <button id="start-btn" class="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                    Inizia Test Combattimento
+                </button>
+            </div>
+        </div>
+
+        <!-- Overlay Game Over -->
+        <div id="gameover-overlay" class="absolute inset-0 bg-red-950/90 hidden flex-col items-center justify-center p-6 text-center z-35 transition-opacity duration-300 opacity-0">
+            <div class="max-w-sm space-y-6">
+                <div class="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
+                    <i data-lucide="skull" class="w-8 h-8 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Connessione Interrotta</h2>
+                    <p class="text-red-300 text-sm">Il tuo nucleo energetico è collassato. Ritenta la scalata del Shift Grid.</p>
+                </div>
+                <button id="restart-btn" class="w-full py-3 bg-white text-slate-950 font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                    Ripristina Sistema
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controlli UI / Barra Inferiore -->
+    <div class="w-full max-w-4xl flex flex-col sm:flex-row justify-between items-center gap-4 z-20 bg-slate-900/40 p-4 rounded-2xl border border-slate-900">
+        <!-- Istruzioni rapide da desktop -->
+        <div class="hidden md:flex items-center gap-6 text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-white rounded-sm border border-slate-300"></span>
+                <span>Tu</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-red-500 rounded-sm"></span>
+                <span>Inseguitore (IA+)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 bg-orange-500 rounded-sm"></span>
+                <span>Ciclico</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">SHIFT / DX MOUSE</kbd>
+                <span>Carica & Scatta</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <kbd class="px-1.5 py-0.5 bg-slate-800 border border-slate-700 rounded text-slate-300 font-mono">SPAZIO / E</kbd>
+                <span>Snap Dimensionale</span>
+            </div>
+        </div>
+
+        <!-- Bottoni Interattivi e Generazione -->
+        <div class="flex flex-wrap gap-3 w-full sm:w-auto justify-center sm:justify-end">
+            <button id="regen-btn" class="flex items-center gap-2 px-4 py-3 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-sm font-semibold rounded-xl transition-all">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Genera Nuova Mappa
+            </button>
+            <button id="snap-btn" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-sm font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/30 relative overflow-hidden group">
+                <span class="absolute inset-0 w-full h-full bg-white/10 transform translate-y-full group-hover:translate-y-0 transition-transform"></span>
+                <i data-lucide="grid" class="w-4 h-4"></i>
+                <span>CAMBIA PERCEZIONE (E)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Script logico del gioco -->
+    <script>
+        // Inizializzazione Lucide Icons
+        lucide.createIcons();
+
+        // Riferimenti DOM
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const welcomeOverlay = document.getElementById('welcome-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const regenBtn = document.getElementById('regen-btn');
+        const snapBtn = document.getElementById('snap-btn');
+        const modeBadge = document.getElementById('mode-badge');
+        const modeText = document.getElementById('mode-text');
+        const floorCounter = document.getElementById('floor-counter');
+
+        // Dimensioni logiche della griglia
+        const GRID_COLS = 16;
+        const GRID_ROWS = 12;
+        let cellSize = 0; // Verrà calcolato dinamicamente in base alle dimensioni del Canvas
+
+        // Stato di gioco globale
+        let isGameRunning = false;
+        let snapMode = false; // false = Libero, true = Snap alla griglia
+        let walls = [];       // Array di muri (coordinate della griglia)
+        let enemies = [];     // Array dei nemici (rossi e arancioni)
+        let particles = [];   // Array particelle d'impatto grafiche
+        let floorLevel = 1;
+
+        // Variabili per Screen Shake (Fisica tremolio schermo)
+        let shakeAmount = 0;
+        let shakeDecay = 0.9;
+        
+        // Struttura del Giocatore
+        const player = {
+            gridX: 4,         // Posizione logica iniziale sulla griglia
+            gridY: 4,
+            x: 0,             // Posizione sub-pixel attuale (in modalità libera)
+            y: 0,
+            size: 24,         // Dimensione visiva
+            speed: 5,         // Velocità in modalità libera
+            
+            // Statistiche Vitali
+            hp: 100,
+            maxHp: 100,
+            color: '#ffffff',
+            
+            // Stati per lo scatto caricabile
+            isCharging: false,
+            charge: 0,        // Da 0 a 1
+            chargeDir: { x: 1, y: 0 }, 
+            lastDir: { x: 1, y: 0 },   // Ultima direzione di movimento valida per rotazione/puntamento
+            isDashing: false,
+
+            // Proprietà fisiche per l'effetto gelatina / aerodinamico (Lerpabili)
+            scaleX: 1,
+            scaleY: 1
+        };
+
+        // Input da tastiera
+        const keys = {};
+
+        // Helper globale per verificare se una cella è occupata da un muro o fuori mappa
+        function isCellBlocked(col, row) {
+            if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) {
+                return true;
+            }
+            return walls.some(w => w.x === col && w.y === row);
+        }
+
+        function hitsWall(x, y, size) {
+            // bordi del canvas
+            if (
+                x < 0 ||
+                y < 0 ||
+                x + size > canvas.width ||
+                y + size > canvas.height
+            ) {
+                return true;
+            }
+
+            // collisione AABB con i muri
+            for (const wall of walls) {
+                const wx = wall.x * cellSize;
+                const wy = wall.y * cellSize;
+
+                if (
+                    x < wx + cellSize &&
+                    x + size > wx &&
+                    y < wy + cellSize &&
+                    y + size > wy
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Inizializza dimensioni del canvas e della griglia in modo responsivo
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            cellSize = canvas.width / GRID_COLS;
+            player.size = cellSize * 0.8; 
+
+            if (!isGameRunning) {
+                resetPlayerCoords();
+            } else {
+                player.x = player.gridX * cellSize + (cellSize - player.size) / 2;
+                player.y = player.gridY * cellSize + (cellSize - player.size) / 2;
+            }
+
+            // Sincronizza anche i nemici se attivi
+            enemies.forEach(enemy => {
+                enemy.size = cellSize * 0.75;
+                if (enemy.type === 'cycler' && !enemy.isAnimating) {
+                    enemy.x = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
+                    enemy.y = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
+                } else if (enemy.type !== 'cycler') {
+                    enemy.x = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
+                    enemy.y = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
+                }
+            });
+        }
+
+        // Posiziona il giocatore al centro di una cella libera della griglia
+        function resetPlayerCoords() {
+            player.x = player.gridX * cellSize + (cellSize - player.size) / 2;
+            player.y = player.gridY * cellSize + (cellSize - player.size) / 2;
+        }
+
+        // Generazione procedurale della mappa + Nemici
+        function generateFloor() {
+            const grid = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                grid[r] = [];
+                for (let c = 0; c < GRID_COLS; c++) {
+                    grid[r][c] = true;
+                }
+            }
+
+            let walkerX = player.gridX;
+            let walkerY = player.gridY;
+
+            // Scaviamo lo spawn
+            grid[walkerY][walkerX] = false;
+
+            const totalCells = GRID_COLS * GRID_ROWS;
+            const targetEmptyPercentage = 0.78; 
+            const cellsToClear = Math.floor(totalCells * targetEmptyPercentage);
+            let clearedCellsCount = 1;
+
+            let iterations = 0;
+            const maxIterations = 3000;
+
+            while (clearedCellsCount < cellsToClear && iterations < maxIterations) {
+                iterations++;
+
+                const direction = Math.floor(Math.random() * 4);
+                let nextX = walkerX;
+                let nextY = walkerY;
+
+                if (direction === 0) nextY--;      // Su
+                else if (direction === 1) nextX++; // Destra
+                else if (direction === 2) nextY++; // Giù
+                else if (direction === 3) nextX--; // Sinistra
+
+                if (nextX >= 0 && nextX < GRID_COLS && nextY >= 0 && nextY < GRID_ROWS) {
+                    walkerX = nextX;
+                    walkerY = nextY;
+
+                    if (grid[walkerY][walkerX]) {
+                        grid[walkerY][walkerX] = false;
+                        clearedCellsCount++;
+                    }
+                }
+            }
+
+            // Muri grafici
+            walls = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (grid[r][c]) {
+                        walls.push({ 
+                            x: c, 
+                            y: r, 
+                            opacity: 0, 
+                            offsetX: 0,     
+                            offsetY: 0,     
+                            pushX: 0,        
+                            pushY: 0,        
+                            targetPushX: 0,  
+                            targetPushY: 0,  
+                            colorFlash: 0 
+                        });
+                    }
+                }
+            }
+
+            // Animazione apparizione muri
+            anime({
+                targets: walls,
+                opacity: 1,
+                duration: 500,
+                delay: anime.stagger(15, {grid: [GRID_COLS, GRID_ROWS], from: 'center'}),
+                easing: 'easeOutQuad'
+            });
+
+            // Spawna Nemici in posizioni libere lontane dal giocatore
+            spawnEnemies(grid);
+        }
+
+        // Spawna un numero casuale di nemici (quadrati rossi e arancioni)
+        function spawnEnemies(grid) {
+            enemies = [];
+            const numEnemies = 3 + Math.floor(Math.random() * 4); // 3 - 6 nemici per piano
+
+            for (let i = 0; i < numEnemies; i++) {
+                let foundSpot = false;
+                let col = 0, row = 0;
+                let attempts = 0;
+
+                while (!foundSpot && attempts < 100) {
+                    col = Math.floor(Math.random() * GRID_COLS);
+                    row = Math.floor(Math.random() * GRID_ROWS);
+
+                    const isWall = grid[row][col];
+                    const distToPlayer = Math.hypot(col - player.gridX, row - player.gridY);
+                    const isOccupied = enemies.some(e => e.gridX === col && e.gridY === row);
+
+                    if (!isWall && distToPlayer > 3 && !isOccupied) {
+                        foundSpot = true;
+                    }
+                    attempts++;
+                }
+
+                if (foundSpot) {
+                    // 50% di probabilità di generare un nemico ciclico arancione o un inseguitore rosso
+                    const isCycler = Math.random() < 0.5;
+
+                    if (isCycler) {
+                        // Nuovo tipo di nemico: Arancione Ciclico vincolato alla griglia
+                        enemies.push({
+                            type: 'cycler',
+                            gridX: col,
+                            gridY: row,
+                            x: col * cellSize + (cellSize - cellSize * 0.75) / 2,
+                            y: row * cellSize + (cellSize - cellSize * 0.75) / 2,
+                            size: cellSize * 0.75,
+                            maxHp: 3,
+                            hp: 3,
+                            dir: { x: 1, y: 0 },      // Direzione di scatto iniziale (Destra)
+                            angle: 0,                 // Angolo di rotazione visivo
+                            cyclerState: 'dash',      // Stato di avvio: pronto a scattare
+                            timer: 30,                // Timer di attesa (frazione di secondo)
+                            isAnimating: false,
+                            isDashing: false,
+                            scaleX: 1,
+                            scaleY: 1,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                    } else {
+                        // Nemico Standard Rosso Inseguitore (IA+)
+                        enemies.push({
+                            type: 'standard',
+                            gridX: col,
+                            gridY: row,
+                            x: col * cellSize + (cellSize - cellSize * 0.75) / 2,
+                            y: row * cellSize + (cellSize - cellSize * 0.75) / 2,
+                            size: cellSize * 0.75,
+                            maxHp: 3,
+                            hp: 3,
+                            speed: 1.6 + Math.random() * 0.6, 
+                            
+                            state: 'patrol', 
+                            charge: 0,       
+                            chargeDir: { x: 0, y: 0 },
+                            isDashing: false,
+                            dashTimer: 0,
+                            dashCooldown: Math.floor(120 + Math.random() * 120), // ARROTONDATO A INTERO PER FISSARE IL BUG
+                            cooldownTimer: 0,
+
+                            scaleX: 1,
+                            scaleY: 1,
+                            angle: 0,
+                            offsetX: 0,
+                            offsetY: 0
+                        });
+                    }
+                }
+            }
+        }
+
+        // Particelle grafiche per feedback scontri (scintille energetiche geometriche)
+        function spawnParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 5;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: 3 + Math.random() * 4,
+                    color: color,
+                    alpha: 1,
+                    life: 0.95 + Math.random() * 0.05
+                });
+            }
+        }
+
+        // Danno al giocatore (immune se sta scattando)
+        function damagePlayer(amount) {
+            if (player.isDashing || !isGameRunning) return;
+            player.hp = Math.max(0, player.hp - amount);
+            shakeAmount = 14; 
+
+            // Effetto gelatina da impatto/dolore
+            triggerPlayerJelly(Math.random() * 2 - 1, Math.random() * 2 - 1);
+            spawnParticles(player.x + player.size/2, player.y + player.size/2, '#ef4444', 15);
+
+            if (player.hp <= 0) {
+                triggerGameOver();
+            }
+        }
+
+        // Schermata Sconfitta
+        function triggerGameOver() {
+            isGameRunning = false;
+            gameoverOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                gameoverOverlay.style.opacity = '1';
+            }, 50);
+        }
+
+        // Reset completo al Game Over
+        function resetGame() {
+            floorLevel = 1;
+            floorCounter.textContent = floorLevel;
+            player.hp = 100;
+            player.gridX = 4;
+            player.gridY = 4;
+            resetPlayerCoords();
+            
+            gameoverOverlay.style.opacity = '0';
+            setTimeout(() => {
+                gameoverOverlay.classList.add('hidden');
+                generateFloor();
+                isGameRunning = true;
+            }, 300);
+        }
+
+        // Innesca l'effetto gelatina (squash & stretch) sul giocatore
+        function triggerPlayerJelly(dirX, dirY) {
+            anime.remove(player);
+            const isHorizontal = Math.abs(dirX) > Math.abs(dirY);
+            player.scaleX = isHorizontal ? 0.45 : 1.55;
+            player.scaleY = isHorizontal ? 1.55 : 0.45;
+
+            anime({
+                targets: player,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 900,
+                easing: 'easeOutElastic(1.3, 0.4)'
+            });
+        }
+
+        // Reazione d'impatto ondulatoria a catena sui muri
+        function triggerWallHit(dirX, dirY, col, row, depth = 0, visited = null) {
+            if (!visited) visited = new Set();
+            const key = `${col},${row}`;
+            
+            if (visited.has(key)) return;
+
+            const wall = walls.find(w => w.x === col && w.y === row);
+            if (wall) {
+                visited.add(key);
+                anime.remove(wall);
+
+                const MAX_DEPTH = 4;
+                const lossFactor = depth / MAX_DEPTH;
+                
+                wall.colorFlash = Math.max(0, 1.0 - lossFactor * 0.7); 
+                const forceFactor = Math.max(0.05, (1.0 - lossFactor * 0.8) * 0.45); 
+                const duration = 70 + depth * 25; 
+
+                anime({
+                    targets: wall,
+                    offsetX: dirX * (cellSize * forceFactor),
+                    offsetY: dirY * (cellSize * forceFactor),
+                    duration: duration,
+                    easing: 'easeOutQuad',
+                    complete: () => {
+                        anime({
+                            targets: wall,
+                            offsetX: 0,
+                            offsetY: 0,
+                            duration: 600 - depth * 40,
+                            easing: 'spring(1.2, 90, 10, 0)'
+                        });
+                    }
+                });
+
+                anime({
+                    targets: wall,
+                    colorFlash: 0,
+                    duration: 500 - depth * 40,
+                    easing: 'easeOutQuad'
+                });
+
+                if (depth < MAX_DEPTH) {
+                    const directions8 = [
+                        {x: -1, y: -1}, {x: 0, y: -1}, {x: 1, y: -1},
+                        {x: -1, y: 0},                  {x: 1, y: 0},
+                        {x: -1, y: 1},  {x: 0, y: 1},  {x: 1, y: 1}
+                    ];
+
+                    directions8.forEach((dir) => {
+                        const targetCol = col + dir.x;
+                        const targetRow = row + dir.y;
+                        const neighborKey = `${targetCol},${targetRow}`;
+
+                        if (!visited.has(neighborKey)) {
+                            setTimeout(() => {
+                                const outwardX = dirX * 0.6 + dir.x * 0.4;
+                                const outwardY = dirY * 0.6 + dir.y * 0.4;
+                                const len = Math.hypot(outwardX, outwardY);
+
+                                triggerWallHit(
+                                    len > 0 ? outwardX / len : dirX,
+                                    len > 0 ? outwardY / len : dirY,
+                                    targetCol,
+                                    targetRow,
+                                    depth + 1,
+                                    visited
+                                );
+                            }, 45); 
+                        }
+                    });
+                }
+            }
+        }
+
+        // Trova il muro colpito in modalità Libera
+        function findAndTriggerHitWallFree(dirX, dirY) {
+            const probeX = player.x + player.size/2 + dirX * (player.size/2 + 8);
+            const probeY = player.y + player.size/2 + dirY * (player.size/2 + 8);
+            const col = Math.floor(probeX / cellSize);
+            const row = Math.floor(probeY / cellSize);
+            triggerWallHit(dirX, dirY, col, row);
+            triggerPlayerJelly(dirX, dirY);
+        }
+
+        // Cambio di modalità: Libera <-> Snap
+        function toggleSnapMode() {
+            if (player.isDashing || player.isCharging) return;
+            snapMode = !snapMode;
+
+            if (snapMode) {
+                const targetCol = Math.min(GRID_COLS - 1, Math.max(0, Math.round(player.x / cellSize)));
+                const targetRow = Math.min(GRID_ROWS - 1, Math.max(0, Math.round(player.y / cellSize)));
+
+                let finalCol = targetCol;
+                let finalRow = targetRow;
+                
+                if (isCellBlocked(finalCol, finalRow)) {
+                    const directions = [
+                        {x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0},
+                        {x: -1, y: -1}, {x: 1, y: -1}, {x: 1, y: 1}, {x: -1, y: 1}
+                    ];
+                    for (let dir of directions) {
+                        let testCol = targetCol + dir.x;
+                        let testRow = targetRow + dir.y;
+                        if (testCol >= 0 && testCol < GRID_COLS && testRow >= 0 && testRow < GRID_ROWS) {
+                            if (!isCellBlocked(testCol, testRow)) {
+                                finalCol = testCol;
+                                finalRow = testRow;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                player.gridX = finalCol;
+                player.gridY = finalRow;
+
+                const destX = finalCol * cellSize + (cellSize - player.size) / 2;
+                const destY = finalRow * cellSize + (cellSize - player.size) / 2;
+
+                anime({
+                    targets: player,
+                    x: destX,
+                    y: destY,
+                    duration: 300,
+                    easing: 'easeOutElastic(1, .6)',
+                    complete: () => {
+                        player.x = destX;
+                        player.y = destY;
+                    }
+                });
+
+                // Forza l'allineamento di tutti i nemici alla griglia
+                enemies.forEach(e => {
+                    if (e.type === 'standard') {
+                        e.angle = Math.PI / 4;
+                    }
+                    e.gridX = Math.round(e.x / cellSize);
+                    e.gridY = Math.round(e.y / cellSize);
+                    const ex = e.gridX * cellSize + (cellSize - e.size) / 2;
+                    const ey = e.gridY * cellSize + (cellSize - e.size) / 2;
+                    anime({
+                        targets: e,
+                        x: ex,
+                        y: ey,
+                        duration: 250,
+                        easing: 'easeOutCubic'
+                    });
+                    
+                    if (e.type !== 'cycler') {
+                        e.state = 'patrol';
+                        e.charge = 0;
+                    }
+                });
+
+                modeBadge.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/30";
+                modeText.textContent = "SNAP (Griglia)";
+                snapBtn.className = "flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-sm font-bold rounded-xl transition-all shadow-lg shadow-violet-900/30 relative overflow-hidden group";
+            } else {
+                modeBadge.className = "flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30";
+                modeText.textContent = "LIBERA (Continuo)";
+                snapBtn.className = "flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-sm font-bold rounded-xl transition-all shadow-lg shadow-cyan-900/30 relative overflow-hidden group";
+            }
+        }
+
+        // Spinta manuale dei muri adiacenti
+        function handleWallPushing(inputX, inputY) {
+            if (inputX === 0 && inputY === 0) return;
+
+            const len = Math.hypot(inputX, inputY);
+            const pushDirX = inputX / len;
+            const pushDirY = inputY / len;
+
+            if (snapMode) {
+                const targetCol = player.gridX + (inputX > 0 ? 1 : (inputX < 0 ? -1 : 0));
+                const targetRow = player.gridY + (inputY > 0 ? 1 : (inputY < 0 ? -1 : 0));
+                const wall = walls.find(w => w.x === targetCol && w.y === targetRow);
+                if (wall) {
+                    const maxPush = cellSize * 0.15;
+                    wall.targetPushX = (inputX > 0 ? 1 : (inputX < 0 ? -1 : 0)) * maxPush;
+                    wall.targetPushY = (inputY > 0 ? 1 : (inputY < 0 ? -1 : 0)) * maxPush;
+                }
+            } else {
+                const checkDist = 4;
+                const testX = player.x + pushDirX * checkDist;
+                const testY = player.y + pushDirY * checkDist;
+
+                if (hitsWall(testX, testY, player.size)) {
+                    const playerCenterX = player.x + player.size / 2;
+                    const playerCenterY = player.y + player.size / 2;
+                    const probeX = playerCenterX + pushDirX * (player.size / 2 + 5);
+                    const probeY = playerCenterY + pushDirY * (player.size / 2 + 5);
+
+                    const col = Math.floor(probeX / cellSize);
+                    const row = Math.floor(probeY / cellSize);
+
+                    const wall = walls.find(w => w.x === col && w.y === row);
+                    if (wall) {
+                        const maxPush = cellSize * 0.12;
+                        wall.targetPushX = pushDirX * maxPush;
+                        wall.targetPushY = pushDirY * maxPush;
+                    }
+                }
+            }
+        }
+
+        // Movimento in modalità Libera
+        function updateFreeMovement() {
+            if (player.isDashing) return;
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['w'] || keys['arrowup']) dy -= player.speed;
+            if (keys['s'] || keys['arrowdown']) dy += player.speed;
+            if (keys['a'] || keys['arrowleft']) dx -= player.speed;
+            if (keys['d'] || keys['arrowright']) dx += player.speed;
+
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.7071;
+                dy *= 0.7071;
+            }
+
+            const nextX = player.x + dx;
+            if (!hitsWall(nextX, player.y, player.size)) {
+                player.x = nextX;
+            }
+
+            const nextY = player.y + dy;
+            if (!hitsWall(player.x, nextY, player.size)) {
+                player.y = nextY;
+            }
+
+            player.gridX = Math.round(player.x / cellSize);
+            player.gridY = Math.round(player.y / cellSize);
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.hypot(dx, dy);
+                player.lastDir.x = dx / len;
+                player.lastDir.y = dy / len;
+                
+                handleWallPushing(dx, dy);
+            }
+        }
+
+        // Movimento discreto in modalità Snap
+        function moveInSnap(dirX, dirY) {
+            if (player.isDashing || player.isCharging) return;
+            const nextGridX = player.gridX + dirX;
+            const nextGridY = player.gridY + dirY;
+
+            if (nextGridX < 0 || nextGridX >= GRID_COLS || nextGridY < 0 || nextGridY >= GRID_ROWS) {
+                return;
+            }
+
+            if (!isCellBlocked(nextGridX, nextGridY)) {
+                player.gridX = nextGridX;
+                player.gridY = nextGridY;
+
+                player.lastDir.x = dirX;
+                player.lastDir.y = dirY;
+
+                const destX = nextGridX * cellSize + (cellSize - player.size) / 2;
+                const destY = nextGridY * cellSize + (cellSize - player.size) / 2;
+
+                anime({
+                    targets: player,
+                    x: destX,
+                    y: destY,
+                    duration: 300,
+                    easing: 'easeOutElastic(1, .6)',
+                    complete: () => {
+                        player.x = destX;
+                        player.y = destY;
+                        
+                        // SNAP MODE TURN: Quando il giocatore si muove, tutti i nemici eseguono un turno
+                        triggerEnemiesTurn();
+                    }
+                });
+            } else {
+                handleWallPushing(dirX, dirY);
+            }
+        }
+
+        // Caricamento scatto
+        function startCharging() {
+            if (!isGameRunning || player.isDashing || player.isCharging) return;
+            player.isCharging = true;
+            player.charge = 0;
+            updateChargeDirectionFromKeys();
+        }
+
+        function cancelCharging() {
+            player.isCharging = false;
+            player.charge = 0;
+        }
+
+        function releaseCharging() {
+            if (player.isCharging) {
+                player.isCharging = false;
+                executeDash();
+            }
+        }
+
+        function updateChargeDirectionFromKeys() {
+            let dx = 0;
+            let dy = 0;
+
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.hypot(dx, dy);
+                player.chargeDir.x = dx / len;
+                player.chargeDir.y = dy / len;
+            } else {
+                player.chargeDir.x = player.lastDir.x;
+                player.chargeDir.y = player.lastDir.y;
+            }
+        }
+
+        // Esegue lo scatto e controlla l'impatto offensivo contro i nemici
+        function executeDash() {
+            if (player.charge < 0.1) {
+                player.charge = 0;
+                player.isCharging = false;
+                return;
+            }
+
+            player.isDashing = true;
+
+            if (snapMode) {
+                let snapDirX = 0, snapDirY = 0;
+                if (Math.abs(player.chargeDir.x) > Math.abs(player.chargeDir.y)) {
+                    snapDirX = player.chargeDir.x > 0 ? 1 : -1;
+                } else {
+                    snapDirY = player.chargeDir.y > 0 ? 1 : -1;
+                }
+
+                const cellsToDash = Math.max(1, Math.floor(player.charge * 4) + 1);
+                let targetCol = player.gridX;
+                let targetRow = player.gridY;
+                let hitAWall = false;
+                let wallCol = -1;
+                let wallRow = -1;
+
+                // Percorso dello scatto cella per cella
+                for (let i = 1; i <= cellsToDash; i++) {
+                    const nextCol = player.gridX + snapDirX * i;
+                    const nextRow = player.gridY + snapDirY * i;
+
+                    if (nextCol < 0 || nextCol >= GRID_COLS || nextRow < 0 || nextRow >= GRID_ROWS) break;
+
+                    // Controlla collisione muro
+                    const hasWall = isCellBlocked(nextCol, nextRow);
+                    if (hasWall) {
+                        hitAWall = true;
+                        wallCol = nextCol;
+                        wallRow = nextRow;
+                        break;
+                    } else {
+                        targetCol = nextCol;
+                        targetRow = nextRow;
+                    }
+
+                    // Controlla scontro con i nemici presenti nella traiettoria
+                    checkOffensiveCollisions(nextCol * cellSize, nextRow * cellSize, snapDirX, snapDirY);
+                }
+
+                const destX = targetCol * cellSize + (cellSize - player.size) / 2;
+                const destY = targetRow * cellSize + (cellSize - player.size) / 2;
+
+                player.gridX = targetCol;
+                player.gridY = targetRow;
+
+                anime({
+                    targets: player,
+                    x: destX,
+                    y: destY,
+                    duration: 180,
+                    easing: 'easeOutQuad',
+                    complete: () => {
+                        player.x = destX;
+                        player.y = destY;
+                        player.isDashing = false;
+                        player.charge = 0;
+                        if (hitAWall) {
+                            triggerWallHit(snapDirX, snapDirY, wallCol, wallRow);
+                            triggerPlayerJelly(snapDirX, snapDirY);
+                        }
+                        triggerEnemiesTurn(); // Lo scatto in modalità Snap consuma anche il turno
+                    }
+                });
+
+            } else {
+                // MODALITÀ LIBERA: Movimento sub-pixel velocissimo
+                const dashSpeedValue = 13 + player.charge * 13;
+                const totalSteps = Math.round(7 + player.charge * 12);
+                let currentStep = 0;
+
+                function dashTick() {
+                    if (currentStep >= totalSteps) {
+                        player.isDashing = false;
+                        player.charge = 0;
+                        return;
+                    }
+
+                    const substeps = 5;
+                    const stepX = (player.chargeDir.x * dashSpeedValue) / substeps;
+                    const stepY = (player.chargeDir.y * dashSpeedValue) / substeps;
+                    let collided = false;
+
+                    for (let s = 0; s < substeps; s++) {
+                        const nextX = player.x + stepX;
+                        const nextY = player.y + stepY;
+                        if (!hitsWall(nextX, nextY, player.size)) {
+                            player.x = nextX;
+                            player.y = nextY;
+                            
+                            // Controlla collisione offensiva contro i nemici
+                            checkOffensiveCollisions(player.x, player.y, player.chargeDir.x, player.chargeDir.y);
+                        } else {
+                            collided = true;
+                            findAndTriggerHitWallFree(player.chargeDir.x, player.chargeDir.y);
+                            break;
+                        }
+                    }
+
+                    if (collided) {
+                        player.isDashing = false;
+                        player.charge = 0;
+                    } else {
+                        currentStep++;
+                        requestAnimationFrame(dashTick);
+                    }
+                }
+
+                dashTick();
+            }
+        }
+
+        // Verifica ed applica il danno d'impatto se il giocatore si scontra con i nemici durante lo scatto
+        function checkOffensiveCollisions(px, py, dirX, dirY) {
+            enemies.forEach((enemy, index) => {
+                if (enemy.hp <= 0) return;
+
+                // Verifica collisione del box (AABB)
+                const isColliding = (
+                    px < enemy.x + enemy.size &&
+                    px + player.size > enemy.x &&
+                    py < enemy.y + enemy.size &&
+                    py + player.size > enemy.y
+                );
+
+                if (isColliding) {
+                    // Danno inflitto al nemico
+                    enemy.hp = Math.max(0, enemy.hp - 1);
+                    shakeAmount = 10; 
+
+                    // Spinge indietro il nemico (Fisica di contraccolpo, solo per non-cycler o se la cella è libera)
+                    const kbDist = cellSize * 0.75;
+                    const kbX = enemy.x + dirX * kbDist;
+                    const kbY = enemy.y + dirY * kbDist;
+
+                    if (!hitsWall(kbX, kbY, enemy.size)) {
+                        anime({
+                            targets: enemy,
+                            x: kbX,
+                            y: kbY,
+                            duration: 180,
+                            easing: 'easeOutQuad',
+                            complete: () => {
+                                enemy.gridX = Math.round(enemy.x / cellSize);
+                                enemy.gridY = Math.round(enemy.y / cellSize);
+                            }
+                        });
+                    }
+
+                    // Frammenti di energia geometrica
+                    const particleColor = enemy.type === 'cycler' ? '#fb923c' : '#f87171';
+                    spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, particleColor, 12);
+
+                    // Se il nemico viene sconfitto, innesca la disintegrazione
+                    if (enemy.hp <= 0) {
+                        spawnParticles(enemy.x + enemy.size/2, enemy.y + enemy.size/2, particleColor === '#fb923c' ? '#f97316' : '#ef4444', 30);
+                        setTimeout(() => {
+                            enemies = enemies.filter(e => e !== enemy);
+                            checkFloorCompletion();
+                        }, 50);
+                    }
+                }
+            });
+        }
+
+        // Verifica se il piano è stato completato (tutti i nemici sconfitti)
+        function checkFloorCompletion() {
+            if (enemies.length === 0 && isGameRunning) {
+                floorLevel++;
+                floorCounter.textContent = floorLevel;
+                shakeAmount = 6;
+                generateFloor();
+            }
+        }
+
+        // --- LOGICA E IA DEI NEMICI ---
+
+        // Funzione per verificare collisione letale del nemico ciclico con il player
+        function checkCyclerCollisionWithPlayer(enemy) {
+            const playerCenterX = player.x + player.size/2;
+            const playerCenterY = player.y + player.size/2;
+            const enemyCenterX = enemy.x + enemy.size/2;
+            const enemyCenterY = enemy.y + enemy.size/2;
+            const dist = Math.hypot(playerCenterX - enemyCenterX, playerCenterY - enemyCenterY);
+            if (dist < (player.size/2 + enemy.size/2)) {
+                damagePlayer(20); // Infligge 20 danni al nucleo del player
+            }
+        }
+
+        // Esegue e fa avanzare lo stato logico del Nemico Ciclico Arancione
+        function advanceCycler(enemy) {
+            if (enemy.hp <= 0 || enemy.isAnimating) return;
+
+            if (enemy.cyclerState === 'dash') {
+                // Calcola il punto di atterraggio dello scatto (fino a 3 celle prima di un muro)
+                let targetCol = enemy.gridX;
+                let targetRow = enemy.gridY;
+                const maxDash = 3;
+                let hitWall = false;
+
+                for (let i = 1; i <= maxDash; i++) {
+                    const nextCol = enemy.gridX + enemy.dir.x * i;
+                    const nextRow = enemy.gridY + enemy.dir.y * i;
+                    if (isCellBlocked(nextCol, nextRow)) {
+                        hitWall = true;
+                        break;
+                    }
+                    targetCol = nextCol;
+                    targetRow = nextRow;
+                }
+
+                // Se è bloccato immediatamente, passa direttamente alla fase di rotazione
+                if (targetCol === enemy.gridX && targetRow === enemy.gridY) {
+                    enemy.cyclerState = 'rotate';
+                    advanceCycler(enemy);
+                    return;
+                }
+
+                enemy.isAnimating = true;
+                enemy.isDashing = true;
+
+                const destX = targetCol * cellSize + (cellSize - enemy.size) / 2;
+                const destY = targetRow * cellSize + (cellSize - enemy.size) / 2;
+
+                // Animazione vincolata alla griglia usando sempre OutBounce
+                anime({
+                    targets: enemy,
+                    x: destX,
+                    y: destY,
+                    duration: 380,
+                    easing: 'easeOutBounce',
+                    change: () => {
+                        checkCyclerCollisionWithPlayer(enemy);
+                    },
+                    complete: () => {
+                        enemy.gridX = targetCol;
+                        enemy.gridY = targetRow;
+                        enemy.isAnimating = false;
+                        enemy.isDashing = false;
+                        enemy.cyclerState = 'idle_after_dash';
+                        // Pausa dopo lo scatto (breve pausa oraria in modalità libera, immediata in Snap)
+                        enemy.timer = snapMode ? 0 : 35;
+                    }
+                });
+
+            } else if (enemy.cyclerState === 'idle_after_dash') {
+                // Passa alla rotazione
+                enemy.cyclerState = 'rotate';
+                advanceCycler(enemy);
+
+            } else if (enemy.cyclerState === 'rotate') {
+                // Trova la prima direzione non ostruita girando in senso orario
+                const CLOCKWISE_DIRS = [{x: 0, y: -1}, {x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}]; // Su, Destra, Giù, Sinistra
+                let currIdx = CLOCKWISE_DIRS.findIndex(d => d.x === enemy.dir.x && d.y === enemy.dir.y);
+                if (currIdx === -1) currIdx = 1;
+
+                let foundDir = null;
+                for (let i = 1; i <= 4; i++) {
+                    let idx = (currIdx + i) % 4;
+                    let testDir = CLOCKWISE_DIRS[idx];
+                    let testCol = enemy.gridX + testDir.x;
+                    let testRow = enemy.gridY + testDir.y;
+                    if (!isCellBlocked(testCol, testRow)) {
+                        foundDir = testDir;
+                        break;
+                    }
+                }
+
+                if (foundDir) {
+                    enemy.dir = foundDir;
+                    let targetAngle = Math.atan2(foundDir.y, foundDir.x);
+                    
+                    enemy.isAnimating = true;
+                    // Rotazione visiva fluida
+                    anime({
+                        targets: enemy,
+                        angle: targetAngle,
+                        duration: 220,
+                        easing: 'easeOutCubic',
+                        complete: () => {
+                            enemy.isAnimating = false;
+                            enemy.cyclerState = 'idle_after_rotate';
+                            enemy.timer = snapMode ? 0 : 30; // Pausa dopo essersi ruotato
+                        }
+                    });
+                } else {
+                    // Completamente intrappolato: aspetta e riprova nel prossimo ciclo
+                    enemy.cyclerState = 'idle_after_rotate';
+                    enemy.timer = snapMode ? 0 : 30;
+                }
+
+            } else if (enemy.cyclerState === 'idle_after_rotate') {
+                // Pronto per il prossimo scatto
+                enemy.cyclerState = 'dash';
+                advanceCycler(enemy);
+            }
+        }
+
+        // IA in modalità continua (Libera) con Obstacle Avoidance & Separation
+        function updateFreeEnemies() {
+            enemies.forEach(enemy => {
+                if (enemy.hp <= 0) return;
+
+                if (enemy.type === 'cycler') {
+                    // Aggiornamento Nemico Ciclico Arancione su timer
+                    if (enemy.isAnimating) {
+                        checkCyclerCollisionWithPlayer(enemy);
+                        return;
+                    }
+
+                    if (enemy.timer > 0) {
+                        enemy.timer--;
+                    } else {
+                        advanceCycler(enemy);
+                    }
+                } else {
+                    // --- IA AVANZATA NEMICO INSEGUITORE ROSSO ---
+                    if (enemy.cooldownTimer > 0) {
+                        enemy.cooldownTimer--;
+                    }
+
+                    // 1. Calcolo del distanziamento reciproco (Separation force) per non sovrapporsi
+                    let sepX = 0;
+                    let sepY = 0;
+                    let sepCount = 0;
+                    enemies.forEach(other => {
+                        if (other === enemy || other.hp <= 0) return;
+                        const distOther = Math.hypot(enemy.x - other.x, enemy.y - other.y);
+                        const minBuffer = enemy.size * 1.5; // Distanza minima di comfort tra i nemici
+                        if (distOther < minBuffer && distOther > 0) {
+                            sepX += (enemy.x - other.x) / distOther;
+                            sepY += (enemy.y - other.y) / distOther;
+                            sepCount++;
+                        }
+                    });
+
+                    if (sepCount > 0) {
+                        sepX /= sepCount;
+                        sepY /= sepCount;
+                        const sepLen = Math.hypot(sepX, sepY);
+                        if (sepLen > 0) {
+                            // Assegna un peso alla forza di spinta reciproca
+                            sepX = (sepX / sepLen) * enemy.speed * 0.75;
+                            sepY = (sepY / sepLen) * enemy.speed * 0.75;
+                        }
+                    }
+
+                    const dx = (player.x + player.size/2) - (enemy.x + enemy.size/2);
+                    const dy = (player.y + player.size/2) - (enemy.y + enemy.size/2);
+                    const dist = Math.hypot(dx, dy);
+
+                    if (enemy.state === 'patrol' || enemy.state === 'chase') {
+                        if (dist < 260) {
+                            enemy.state = 'chase';
+                        }
+
+                        if (enemy.state === 'chase') {
+                            // 2. Algoritmo di scansione ostacoli (Obstacle Avoidance a raggiera)
+                            const targetAngle = Math.atan2(dy, dx);
+                            let moveAngle = targetAngle;
+                            let foundPath = false;
+
+                            // Proviamo diverse angolazioni sfalsate in cerca di un percorso non ostruito
+                            const testOffsets = [0, Math.PI/8, -Math.PI/8, Math.PI/4, -Math.PI/4, Math.PI/2.5, -Math.PI/2.5, Math.PI/2, -Math.PI/2];
+                            
+                            for (let offset of testOffsets) {
+                                const checkAngle = targetAngle + offset;
+                                const testVx = Math.cos(checkAngle) * enemy.speed;
+                                const testVy = Math.sin(checkAngle) * enemy.speed;
+
+                                // Verifica collisione un po' più avanti nel tempo per anticipare gli ostacoli
+                                if (!hitsWall(enemy.x + testVx * 2.5, enemy.y + testVy * 2.5, enemy.size)) {
+                                    moveAngle = checkAngle;
+                                    foundPath = true;
+                                    break;
+                                }
+                            }
+
+                            // Direzione di inseguimento base + evasione muri
+                            let vx = Math.cos(moveAngle) * enemy.speed;
+                            let vy = Math.sin(moveAngle) * enemy.speed;
+
+                            // Combina il vettore di inseguimento con la forza di separazione dagli altri nemici
+                            vx += sepX;
+                            vy += sepY;
+
+                            // Normalizza la velocità finale per non superare il limite massimo dell'IA
+                            const currentLen = Math.hypot(vx, vy);
+                            if (currentLen > 0) {
+                                vx = (vx / currentLen) * enemy.speed;
+                                vy = (vy / currentLen) * enemy.speed;
+                            }
+
+                            const nextX = enemy.x + vx;
+                            const nextY = enemy.y + vy;
+
+                            // Spostamento controllato
+                            if (!hitsWall(nextX, enemy.y, enemy.size)) {
+                                enemy.x = nextX;
+                            }
+                            if (!hitsWall(enemy.x, nextY, enemy.size)) {
+                                enemy.y = nextY;
+                            }
+
+                            enemy.gridX = Math.round(enemy.x / cellSize);
+                            enemy.gridY = Math.round(enemy.y / cellSize);
+                            
+                            enemy.angle = Math.atan2(vy, vx);
+
+                            // Attacco se vicino
+                            if (dist < 130 && enemy.cooldownTimer <= 0) {
+                                enemy.state = 'charge';
+                                enemy.charge = 0;
+                                enemy.chargeDir.x = dx / dist;
+                                enemy.chargeDir.y = dy / dist;
+                            }
+                        }
+                    } else if (enemy.state === 'charge') {
+                        enemy.charge = Math.min(1.0, enemy.charge + 0.02); 
+                        enemy.angle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
+
+                        if (enemy.charge >= 1.0) {
+                            enemy.state = 'dash';
+                            enemy.dashTimer = 15; 
+                            enemy.isDashing = true;
+                        }
+                    } else if (enemy.state === 'dash') {
+                        const dashSpeed = 10;
+                        const vx = enemy.chargeDir.x * dashSpeed;
+                        const vy = enemy.chargeDir.y * dashSpeed;
+
+                        const nextX = enemy.x + vx;
+                        const nextY = enemy.y + vy;
+
+                        const playerDist = Math.hypot((player.x + player.size/2) - (enemy.x + enemy.size/2), (player.y + player.size/2) - (enemy.y + enemy.size/2));
+                        if (playerDist < (player.size/2 + enemy.size/2)) {
+                            damagePlayer(25); 
+                            enemy.state = 'patrol';
+                            enemy.isDashing = false;
+                            enemy.cooldownTimer = enemy.dashCooldown;
+                        } else if (!hitsWall(nextX, nextY, enemy.size)) {
+                            enemy.x = nextX;
+                            enemy.y = nextY;
+                            enemy.dashTimer--;
+
+                            if (enemy.dashTimer <= 0) {
+                                enemy.state = 'patrol';
+                                enemy.isDashing = false;
+                                enemy.cooldownTimer = enemy.dashCooldown;
+                            }
+                        } else {
+                            const hitCol = Math.floor((enemy.x + enemy.size/2 + enemy.chargeDir.x * 12) / cellSize);
+                            const hitRow = Math.floor((enemy.y + enemy.size/2 + enemy.chargeDir.y * 12) / cellSize);
+                            triggerWallHit(enemy.chargeDir.x, enemy.chargeDir.y, hitCol, hitRow);
+
+                            enemy.state = 'patrol';
+                            enemy.isDashing = false;
+                            enemy.cooldownTimer = enemy.dashCooldown + 60; 
+                        }
+                    }
+                }
+            });
+        }
+
+        // Turno dei nemici in modalità Snap (Griglia passo-passo)
+        function triggerEnemiesTurn() {
+            enemies.forEach(enemy => {
+                if (enemy.hp <= 0) return;
+
+                if (enemy.type === 'cycler') {
+                    // Avanza il ciclo di 1 passo discreto per turno
+                    advanceCycler(enemy);
+                } else {
+                    // --- IA ROSSA TURN-BASED CON EVASIONE E SEPARAZIONE ---
+                    const colDist = player.gridX - enemy.gridX;
+                    const rowDist = player.gridY - enemy.gridY;
+                    const dist = Math.abs(colDist) + Math.abs(rowDist);
+
+                    if (enemy.state === 'charge') {
+                        let snapDirX = 0, snapDirY = 0;
+                        if (Math.abs(enemy.chargeDir.x) > Math.abs(enemy.chargeDir.y)) {
+                            snapDirX = enemy.chargeDir.x > 0 ? 1 : -1;
+                        } else {
+                            snapDirY = enemy.chargeDir.y > 0 ? 1 : -1;
+                        }
+
+                        const dashDistance = 4; 
+                        let finalCol = enemy.gridX;
+                        let finalRow = enemy.gridY;
+                        let hitWall = false;
+                        let hitPlayer = false;
+
+                        for (let i = 1; i <= dashDistance; i++) {
+                            const testCol = enemy.gridX + snapDirX * i;
+                            const testRow = enemy.gridY + snapDirY * i;
+
+                            if (testCol === player.gridX && testRow === player.gridY) {
+                                hitPlayer = true;
+                                finalCol = testCol - snapDirX;
+                                finalRow = testRow - snapDirY;
+                                break;
+                            }
+
+                            const isWall = isCellBlocked(testCol, testRow);
+                            if (isWall) {
+                                hitWall = true;
+                                finalCol = testCol - snapDirX;
+                                finalRow = testRow - snapDirY;
+                                break;
+                            }
+
+                            finalCol = testCol;
+                            finalRow = testRow;
+                        }
+
+                        enemy.gridX = finalCol;
+                        enemy.gridY = finalRow;
+
+                        const destX = finalCol * cellSize + (cellSize - enemy.size) / 2;
+                        const destY = finalRow * cellSize + (cellSize - enemy.size) / 2;
+
+                        anime({
+                            targets: enemy,
+                            x: destX,
+                            y: destY,
+                            duration: 220,
+                            easing: 'easeOutQuad',
+                            complete: () => {
+                                enemy.x = destX;
+                                enemy.y = destY;
+                                enemy.state = 'patrol';
+                                enemy.charge = 0;
+
+                                if (hitPlayer) {
+                                    damagePlayer(30); 
+                                }
+                                if (hitWall) {
+                                    triggerWallHit(snapDirX, snapDirY, finalCol + snapDirX, finalRow + snapDirY);
+                                }
+                            }
+                        });
+
+                    } else {
+                        const inLineOfSight = (player.gridX === enemy.gridX || player.gridY === enemy.gridY) && dist <= 5;
+
+                        if (inLineOfSight) {
+                            enemy.state = 'charge';
+                            enemy.charge = 1.0;
+                            const len = Math.hypot(colDist, rowDist);
+                            enemy.chargeDir.x = colDist / len;
+                            enemy.chargeDir.y = rowDist / len;
+                        } else {
+                            // Algoritmo di scansione direzioni discrete con prevenzione ingorghi e collisioni ad angoli
+                            const targetSteps = [
+                                { x: 1, y: 0 },
+                                { x: -1, y: 0 },
+                                { x: 0, y: 1 },
+                                { x: 0, y: -1 }
+                            ];
+
+                            let validMoves = [];
+
+                            targetSteps.forEach(step => {
+                                const nextCol = enemy.gridX + step.x;
+                                const nextRow = enemy.gridY + step.y;
+
+                                // 1. Evita i muri e i limiti della mappa
+                                if (isCellBlocked(nextCol, nextRow)) return;
+
+                                // 2. Evita la sovrapposizione con altri nemici (Separazione in Griglia)
+                                const isOccupied = enemies.some(e => e !== enemy && e.hp > 0 && e.gridX === nextCol && e.gridY === nextRow);
+                                if (isOccupied) return;
+
+                                // 3. Calcola la distanza futura dal giocatore per ogni mossa valida
+                                const futureDist = Math.hypot(player.gridX - nextCol, player.gridY - nextRow);
+                                validMoves.push({ step, dist: futureDist });
+                            });
+
+                            // Ordina le mosse libere posizionando la più vicina al giocatore in cima
+                            validMoves.sort((a, b) => a.dist - b.dist);
+
+                            if (validMoves.length > 0) {
+                                const bestMove = validMoves[0].step;
+                                enemy.gridX += bestMove.x;
+                                enemy.gridY += bestMove.y;
+
+                                const destX = enemy.gridX * cellSize + (cellSize - enemy.size) / 2;
+                                const destY = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
+
+                                anime({
+                                    targets: enemy,
+                                    x: destX,
+                                    y: destY,
+                                    duration: 250,
+                                    easing: 'easeOutCubic'
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Loop di rendering principale
+        function draw() {
+            if (player.isCharging && isGameRunning) {
+                updateChargeDirectionFromKeys();
+                player.charge = Math.min(1.0, player.charge + 0.035);
+            }
+
+            ctx.save();
+            if (shakeAmount > 0.1) {
+                const dx = (Math.random() * 2 - 1) * shakeAmount;
+                const dy = (Math.random() * 2 - 1) * shakeAmount;
+                ctx.translate(dx, dy);
+                shakeAmount *= shakeDecay;
+            }
+
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 1. DISEGNA LA GRIGLIA SOTTOSTANTE
+            ctx.strokeStyle = snapMode ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
+            for (let c = 0; c <= GRID_COLS; c++) {
+                ctx.beginPath();
+                ctx.moveTo(c * cellSize, 0);
+                ctx.lineTo(c * cellSize, canvas.height);
+                ctx.stroke();
+            }
+            for (let r = 0; r <= GRID_ROWS; r++) {
+                ctx.beginPath();
+                ctx.moveTo(0, r * cellSize);
+                ctx.lineTo(canvas.width, r * cellSize);
+                ctx.stroke();
+            }
+
+            // 2. DISEGNA I PREVIEW E LE PROIEZIONI DEGLI SCATTI
+            if (isGameRunning) {
+                if (player.isCharging) {
+                    if (snapMode) {
+                        let snapDirX = 0, snapDirY = 0;
+                        if (Math.abs(player.chargeDir.x) > Math.abs(player.chargeDir.y)) {
+                            snapDirX = player.chargeDir.x > 0 ? 1 : -1;
+                        } else {
+                            snapDirY = player.chargeDir.y > 0 ? 1 : -1;
+                        }
+
+                        const cellsToDash = Math.max(1, Math.floor(player.charge * 4) + 1);
+                        
+                        for (let i = 1; i <= cellsToDash; i++) {
+                            const nextCol = player.gridX + snapDirX * i;
+                            const nextRow = player.gridY + snapDirY * i;
+
+                            if (nextCol < 0 || nextCol >= GRID_COLS || nextRow < 0 || nextRow >= GRID_ROWS) break;
+
+                            const hasWall = isCellBlocked(nextCol, nextRow);
+                            
+                            if (hasWall) {
+                                ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+                                ctx.fillRect(nextCol * cellSize + 2, nextRow * cellSize + 2, cellSize - 4, cellSize - 4);
+                                break;
+                            } else {
+                                ctx.fillStyle = 'rgba(139, 92, 246, 0.15)';
+                                ctx.fillRect(nextCol * cellSize + 4, nextRow * cellSize + 4, cellSize - 8, cellSize - 8);
+                            }
+                        }
+                    } else {
+                        const startX = player.x + player.size/2;
+                        const startY = player.y + player.size/2;
+                        const maxLen = 80 + player.charge * 140;
+                        
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                        ctx.setLineDash([4, 4]);
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(startX + player.chargeDir.x * maxLen, startY + player.chargeDir.y * maxLen);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+
+                // Proiezione scatti IA standard (Rosso)
+                enemies.forEach(enemy => {
+                    if (enemy.type !== 'cycler' && enemy.state === 'charge' && snapMode) {
+                        let snapDirX = 0, snapDirY = 0;
+                        if (Math.abs(enemy.chargeDir.x) > Math.abs(enemy.chargeDir.y)) {
+                            snapDirX = enemy.chargeDir.x > 0 ? 1 : -1;
+                        } else {
+                            snapDirY = enemy.chargeDir.y > 0 ? 1 : -1;
+                        }
+
+                        const dashDistance = 4;
+                        for (let i = 1; i <= dashDistance; i++) {
+                            const targetCol = enemy.gridX + snapDirX * i;
+                            const targetRow = enemy.gridY + snapDirY * i;
+
+                            if (targetCol < 0 || targetCol >= GRID_COLS || targetRow < 0 || targetRow >= GRID_ROWS) break;
+
+                            const isWall = isCellBlocked(targetCol, targetRow);
+                            
+                            ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+                            ctx.fillRect(targetCol * cellSize + 4, targetRow * cellSize + 4, cellSize - 8, cellSize - 8);
+                            ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
+                            ctx.lineWidth = 1.5;
+                            ctx.strokeRect(targetCol * cellSize + 4, targetRow * cellSize + 4, cellSize - 8, cellSize - 8);
+
+                            if (isWall) break;
+                        }
+                    }
+                });
+            }
+
+            // 3. DISEGNA I MURI
+            walls.forEach(wall => {
+                wall.pushX = wall.pushX || 0;
+                wall.pushY = wall.pushY || 0;
+                const tx = wall.targetPushX || 0;
+                const ty = wall.targetPushY || 0;
+
+                wall.pushX += (tx - wall.pushX) * 0.2;
+                wall.pushY += (ty - wall.pushY) * 0.2;
+
+                wall.targetPushX = 0;
+                wall.targetPushY = 0;
+
+                const ox = (wall.offsetX || 0) + wall.pushX;
+                const oy = (wall.offsetY || 0) + wall.pushY;
+                const flash = wall.colorFlash || 0;
+
+                const r = Math.round(34 + (255 - 34) * flash);
+                const g = Math.round(211 + (80 - 211) * flash);
+                const b = Math.round(238 + (80 - 238) * flash);
+
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${wall.opacity})`;
+                ctx.beginPath();
+                
+                const x = wall.x * cellSize + 2 + ox;
+                const y = wall.y * cellSize + 2 + oy;
+                const w = cellSize - 4;
+                const h = cellSize - 4;
+                
+                ctx.roundRect(x, y, w, h, 4);
+                ctx.fill();
+
+                if (snapMode || flash > 0) {
+                    ctx.strokeStyle = flash > 0 ? `rgba(255, 80, 80, ${0.4 + flash * 0.5})` : 'rgba(34, 211, 238, 0.4)';
+                    ctx.lineWidth = flash > 0 ? 1.5 + flash * 1.0 : 1.5;
+                    ctx.stroke();
+                }
+            });
+
+            // 4. AGGIORNA E DISEGNA PARTICELLE GRAFICHE
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vx *= p.life;
+                p.vy *= p.life;
+                p.alpha -= 0.022;
+
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                } else {
+                    ctx.save();
+                    ctx.globalAlpha = p.alpha;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                    ctx.restore();
+                }
+            });
+
+            // 5. DISEGNA I NEMICI (Inseguitori e Ciclici)
+            enemies.forEach(enemy => {
+                if (enemy.hp <= 0) return;
+
+                const healthRatio = enemy.hp / enemy.maxHp;
+
+                ctx.save();
+                ctx.translate(enemy.x + enemy.size/2 + (enemy.offsetX || 0), enemy.y + enemy.size/2 + (enemy.offsetY || 0));
+
+                let drawAngle = enemy.angle;
+
+                if (enemy.type === 'cycler') {
+                    // --- DISEGNO NEMICO ARANCIONE CICLICO ---
+                    const r = Math.round(50 + 199 * healthRatio);
+                    const g = Math.round(15 + 100 * healthRatio);
+                    const b = Math.round(5 + 17 * healthRatio);
+                    ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+                    let targetScaleX = 1;
+                    let targetScaleY = 1;
+
+                    if (enemy.cyclerState === 'dash' || enemy.isDashing) {
+                        targetScaleX = 1.35;
+                        targetScaleY = 0.75;
+                    }
+
+                    ctx.rotate(drawAngle);
+                    ctx.scale(targetScaleX, targetScaleY);
+
+                    ctx.beginPath();
+                    ctx.roundRect(-enemy.size/2, -enemy.size/2, enemy.size, enemy.size, 4);
+                    ctx.fill();
+
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.moveTo(enemy.size/2 - 2, 0);
+                    ctx.lineTo(enemy.size/4, -enemy.size/5);
+                    ctx.lineTo(enemy.size/4, enemy.size/5);
+                    ctx.fill();
+
+                } else {
+                    // --- DISEGNO NEMICO ROSSO STANDARD ---
+                    const r = Math.round(80 + 159 * healthRatio);
+                    const g = Math.round(20 * healthRatio);
+                    const b = Math.round(20 * healthRatio);
+
+                    let targetScaleX = 1;
+                    let targetScaleY = 1;
+
+                    if (snapMode) {
+                        if (enemy.state === 'charge') {
+                            drawAngle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
+                            targetScaleX = 0.7;
+                            targetScaleY = 1.3;
+                        } else {
+                            drawAngle = Math.PI / 4; // Diamante (45 gradi)
+                        }
+                    } else { 
+                        if (enemy.state === 'chase') {
+                            targetScaleX = 1.15;
+                            targetScaleY = 0.85;
+                        } else if (enemy.state === 'charge') {
+                            targetScaleX = 1 - enemy.charge * 0.35;
+                            targetScaleY = 1 + enemy.charge * 0.45;
+                            drawAngle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
+                        } else if (enemy.state === 'dash' || enemy.isDashing) {
+                            targetScaleX = 1.45;
+                            targetScaleY = 0.65;
+                            drawAngle = Math.atan2(enemy.chargeDir.y, enemy.chargeDir.x);
+                        }
+                    }
+
+                    // Interpolazione elastica
+                    enemy.scaleX += (targetScaleX - enemy.scaleX) * 0.18;
+                    enemy.scaleY += (targetScaleY - enemy.scaleY) * 0.18;
+
+                    let angleDiff = drawAngle - enemy.angle;
+                    angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+                    enemy.angle += angleDiff * 0.2;
+
+                    ctx.rotate(enemy.angle);
+                    ctx.scale(enemy.scaleX, enemy.scaleY);
+
+                    if (enemy.state === 'charge') {
+                        ctx.fillStyle = `rgb(245, 158, 11)`; 
+                    } else {
+                        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                    }
+
+                    ctx.beginPath();
+                    ctx.roundRect(-enemy.size/2, -enemy.size/2, enemy.size, enemy.size, 4);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            });
+
+            // 6. DISEGNA IL GIOCATORE
+            if (isGameRunning) {
+                const isPlayerMoving = (keys['w'] || keys['arrowup'] || keys['s'] || keys['arrowdown'] || keys['a'] || keys['arrowleft'] || keys['d'] || keys['arrowright']) && !player.isDashing && !player.isCharging;
+
+                let targetScaleX = 1;
+                let targetScaleY = 1;
+                let targetAngle = 0;
+
+                if (player.isCharging && !snapMode) {
+                    targetAngle = Math.atan2(player.chargeDir.y, player.chargeDir.x);
+                    targetScaleX = 0.7; 
+                    targetScaleY = 1.3;
+                } else if (player.isDashing) {
+                    targetAngle = Math.atan2(player.chargeDir.y, player.chargeDir.x);
+                    targetScaleX = 1.45; 
+                    targetScaleY = 0.65;
+                } else if (!snapMode) {
+                    targetAngle = Math.atan2(player.lastDir.y, player.lastDir.x);
+                    if (isPlayerMoving) {
+                        targetScaleX = 1.15; 
+                        targetScaleY = 0.85;
+                    }
+                }
+
+                player.scaleX += (targetScaleX - player.scaleX) * 0.18;
+                player.scaleY += (targetScaleY - player.scaleY) * 0.18;
+
+                let pAngleDiff = targetAngle - Math.atan2(Math.sin(player.angle || 0), Math.cos(player.angle || 0));
+                pAngleDiff = Math.atan2(Math.sin(pAngleDiff), Math.cos(pAngleDiff));
+                player.angle = (player.angle || 0) + pAngleDiff * 0.22;
+
+                ctx.save();
+                ctx.translate(player.x + player.size/2, player.y + player.size/2);
+                ctx.rotate(player.angle);
+                ctx.scale(player.scaleX, player.scaleY);
+
+                const hpRatio = player.hp / player.maxHp;
+                const pr = 255;
+                const pg = Math.round(60 + (255 - 60) * hpRatio);
+                const pb = Math.round(60 + (255 - 60) * hpRatio);
+
+                ctx.fillStyle = `rgb(${pr}, ${pg}, ${pb})`;
+                ctx.beginPath();
+                ctx.roundRect(-player.size/2, -player.size/2, player.size, player.size, 4);
+                ctx.fill();
+                ctx.restore();
+
+                // Arco UI di carica
+                if (player.isCharging) {
+                    ctx.strokeStyle = snapMode ? 'rgba(139, 92, 246, 0.8)' : 'rgba(255, 255, 255, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    const centerX = player.x + player.size/2;
+                    const centerY = player.y + player.size/2;
+                    const radius = player.size * 0.9;
+                    ctx.arc(centerX, centerY, radius, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * player.charge));
+                    ctx.stroke();
+                }
+
+                // Scia olografica
+                if (snapMode || player.isDashing) {
+                    ctx.strokeStyle = player.isDashing ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = player.isDashing ? 3 : 2;
+                    ctx.beginPath();
+                    ctx.roundRect(player.x, player.y, player.size, player.size, 4);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+
+            // Aggiornamenti IA e movimento continuo
+            if (isGameRunning) {
+                if (!snapMode) {
+                    updateFreeMovement();
+                    updateFreeEnemies();
+                } else {
+                    let inputX = 0;
+                    let inputY = 0;
+                    if (keys['w'] || keys['arrowup']) inputY -= 1;
+                    if (keys['s'] || keys['arrowdown']) inputY += 1;
+                    if (keys['a'] || keys['arrowleft']) inputX -= 1;
+                    if (keys['d'] || keys['arrowright']) inputX += 1;
+                    if (inputX !== 0 || inputY !== 0) {
+                        handleWallPushing(inputX, inputY);
+                    }
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- GESTIONE INPUT ---
+
+        window.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener('mousedown', (e) => {
+            if (!isGameRunning) return;
+
+            if (e.button === 2) { 
+                e.preventDefault();
+                startCharging();
+            } else if (e.button === 0) { 
+                if (player.isCharging) {
+                    cancelCharging();
+                }
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (e.button === 2) { 
+                releaseCharging();
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (!isGameRunning || player.isDashing) return;
+            if (e.touches.length > 1) {
+                cancelCharging();
+            } else {
+                startCharging();
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (e.touches.length === 0) {
+                releaseCharging();
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+
+            if (e.key === 'Shift') {
+                keys['shift'] = true;
+            }
+
+            if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'e', 'shift'].includes(e.key.toLowerCase())) {
+                e.preventDefault();
+            }
+
+            if (!isGameRunning) return;
+
+            if (e.key === ' ' || key === 'e') {
+                toggleSnapMode();
+            }
+
+            if (e.key === 'Shift') {
+                startCharging();
+            }
+
+            if (snapMode) {
+                if (key === 'w' || key === 'arrowup') moveInSnap(0, -1);
+                if (key === 's' || key === 'arrowdown') moveInSnap(0, 1);
+                if (key === 'a' || key === 'arrowleft') moveInSnap(-1, 0);
+                if (key === 'd' || key === 'arrowright') moveInSnap(1, 0);
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = false;
+            
+            if (e.key === 'Shift') {
+                keys['shift'] = false;
+                releaseCharging(); 
+            }
+        });
+
+        // Event Listeners dei Pulsanti
+        startBtn.addEventListener('click', () => {
+            welcomeOverlay.style.opacity = '0';
+            setTimeout(() => {
+                welcomeOverlay.classList.add('hidden');
+                isGameRunning = true;
+            }, 300);
+        });
+
+        restartBtn.addEventListener('click', () => {
+            resetGame();
+        });
+
+        regenBtn.addEventListener('click', () => {
+            generateFloor();
+        });
+
+        snapBtn.addEventListener('click', () => {
+            if (isGameRunning) toggleSnapMode();
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        window.onload = () => {
+            resizeCanvas();
+            generateFloor();
+            draw();
+        };
+    </script>
+</body>
+</html>
