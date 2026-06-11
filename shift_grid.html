@@ -152,7 +152,8 @@
                     <div class="space-y-1">
                         <span class="text-cyan-400 font-semibold uppercase block">Innesco Scatto</span>
                         <div class="text-slate-400">Tieni premuto <span class="text-white font-semibold">Shift</span> o
-                            <span class="text-white font-semibold">Tasto Dx Mouse</span>. Rilascia!</div>
+                            <span class="text-white font-semibold">Tasto Dx Mouse</span>. Rilascia!
+                        </div>
                     </div>
                 </div>
 
@@ -272,8 +273,8 @@
                 </div>
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-2">Connessione Interrotta</h2>
-                    <p class="text-red-300 text-sm">Il tuo nucleo energetico è collassato. Ritenta la scalata del Shift
-                        Grid.</p>
+                    <p id="gameover-text" class="text-red-300 text-sm">Il tuo nucleo energetico è collassato. Ritenta la
+                        scalata del Shift Grid.</p>
                 </div>
                 <button id="restart-btn"
                     class="w-full py-3 bg-white text-slate-950 font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
@@ -759,8 +760,47 @@
         function triggerGameOver() {
             isGameRunning = false;
             gameoverOverlay.classList.remove('hidden');
+
+            // **NUOVO: Animazione scramble text**
+            anime({
+                targets: '#gameover-text',
+                duration: 800,
+                easing: 'easeInOutQuad'
+            });
+
+            const textElement = document.getElementById('gameover-text');
+            const originalText = textElement.textContent;
+            const textArray = originalText.split('');
+            let frameCount = 0;
+            const duration = 800;
+            const fps = 60;
+            const totalFrames = (duration / 1000) * fps;
+
+            function scrambleFrame() {
+                const progress = frameCount / totalFrames;
+                let scrambledText = '';
+
+                for (let i = 0; i < textArray.length; i++) {
+                    if (Math.random() > progress) {
+                        scrambledText += String.fromCharCode(33 + Math.random() * 94);
+                    } else {
+                        scrambledText += textArray[i];
+                    }
+                }
+
+                textElement.textContent = scrambledText;
+                frameCount++;
+
+                if (frameCount < totalFrames) {
+                    requestAnimationFrame(scrambleFrame);
+                } else {
+                    textElement.textContent = originalText;
+                }
+            }
+
             setTimeout(() => {
                 gameoverOverlay.style.opacity = '1';
+                scrambleFrame();
             }, 50);
         }
 
@@ -957,11 +997,9 @@
 
                 // Forza l'allineamento di tutti i nemici alla griglia
                 enemies.forEach(e => {
-                    if (e.type !== 'cycler' && e.type !== 'gravitor') {
-                        e.angle = Math.PI / 4;
-                    }
                     e.gridX = Math.round(e.x / cellSize);
                     e.gridY = Math.round(e.y / cellSize);
+                    e.angle = 0;
                     const ex = e.gridX * cellSize + (cellSize - e.size) / 2;
                     const ey = e.gridY * cellSize + (cellSize - e.size) / 2;
                     anime({
@@ -1478,6 +1516,28 @@
 
             // Collisione quando il giocatore entra nella porta
             if (dist < cellSize * 0.6) {
+                // **NUOVO: Animazione stagger grid sulle celle**
+                const gridCells = [];
+                for (let r = 0; r < GRID_ROWS; r++) {
+                    for (let c = 0; c < GRID_COLS; c++) {
+                        gridCells.push({
+                            col: c,
+                            row: r,
+                            opacity: 1,
+                            scale: 1
+                        });
+                    }
+                }
+
+                anime({
+                    targets: gridCells,
+                    opacity: 0,
+                    scale: 0.5,
+                    duration: 300,
+                    delay: anime.stagger(10, { grid: [GRID_COLS, GRID_ROWS], from: 'center' }),
+                    easing: 'easeInQuad'
+                });
+
                 // Memorizza la posizione della porta per il prossimo livello
                 lastDoorCol = exitDoor.col;
                 lastDoorRow = exitDoor.row;
@@ -1492,7 +1552,10 @@
                 exitDoor = null;
                 circuitAnimation = null;
 
-                generateFloor();
+                // Attendi la fine dell'animazione prima di generare il nuovo livello
+                setTimeout(() => {
+                    generateFloor();
+                }, 400);
             }
         }
 
@@ -2602,6 +2665,10 @@
                     ctx.stroke();
                 }
             }
+            
+            drawKey();
+            drawCircuitLines();
+            drawExitDoor();
 
             ctx.restore();
 
@@ -2635,10 +2702,6 @@
                 checkKeyCollision();
                 checkDoorCollision();
             }
-
-            drawKey();
-            drawCircuitLines();
-            drawExitDoor();
 
             requestAnimationFrame(draw);
         }
@@ -2755,15 +2818,31 @@
         });
 
         document.getElementById('menu-btn').addEventListener('click', () => {
-            isGameRunning = false;
             gameoverOverlay.style.opacity = '0';
             gameoverOverlay.classList.add('hidden');
+
+            globalRotationWarning = false;
+
+            snapMode = false;
+            walls = [];
+            enemies = [];
+            particles = [];
+            floorLevel = 1;
 
             keyDrop = null;
             exitDoor = null;
             circuitAnimation = null;
             keyCollected = false;
 
+            floorLevel = 1;
+            floorCounter.textContent = floorLevel;
+            player.hp = 100;
+            player.gridX = 4;
+            player.gridY = 4;
+            resetPlayerCoords();
+
+            generateFloor();
+            isGameRunning = false;
             welcomeOverlay.style.opacity = '1';
             welcomeOverlay.classList.remove('hidden');
         });
