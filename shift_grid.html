@@ -14,37 +14,55 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Space Grotesk', sans-serif;
             background-color: #0b0f19;
             overflow: hidden;
             user-select: none;
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            width: 100vw;
         }
 
-        /* Canvas container */
+        /* Canvas container: QUADRATO PERFETTO, lato = altezza schermo */
         #canvas-container {
             position: relative;
+            width: 100vh;
+            height: 100vh;
+            flex-shrink: 0;
             box-shadow: 0 0 40px rgba(0, 240, 255, 0.15);
+            background-color: #0b0f19;
         }
 
-        /* Effetto Scanline nostalgico e minimale */
-        .scanlines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%,
-                    rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg,
-                    rgba(255, 0, 0, 0.06),
-                    rgba(0, 255, 0, 0.02),
-                    rgba(0, 0, 255, 0.06));
-            background-size: 100% 4px, 6px 100%;
-            pointer-events: none;
-            z-index: 10;
+        /* Sidebar laterali */
+        .sidebar {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: linear-gradient(180deg, #0b0f19 0%, #111827 100%);
+            border: 1px solid rgba(30, 41, 59, 0.5);
         }
 
-        /* Animazione bagliore pulsante */
+        .sidebar-left {
+            border-right: 1px solid rgba(56, 189, 248, 0.1);
+        }
+
+        .sidebar-right {
+            border-left: 1px solid rgba(56, 189, 248, 0.1);
+        }
+
         @keyframes pulse-glow {
 
             0%,
@@ -60,80 +78,143 @@
         .player-glow {
             animation: pulse-glow 2s infinite;
         }
+
+        /* Scrollbar custom per le sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 2px;
+        }
+
+        /* Responsive: se lo schermo è troppo stretto, rimpicciolisci il canvas */
+        @media (max-aspect-ratio: 1/1) {
+            #canvas-container {
+                width: 100vw;
+                height: 100vw;
+            }
+
+            .sidebar {
+                display: none;
+                /* Nascondi sidebar su schermi molto stretti */
+            }
+        }
+
+        /* Effetto Scanline nostalgico e minimale */
+        /* .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+                    rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg,
+                    rgba(255, 0, 0, 0.06),
+                    rgba(0, 255, 0, 0.02),
+                    rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+            z-index: 10;
+        } */
     </style>
 </head>
 
-<body class="flex flex-col items-center justify-between min-h-screen text-white p-4 md:p-6">
-
-    <!-- Header UI -->
-    <div class="w-full max-w-4xl flex flex-col md:flex-row justify-between items-center gap-4 z-20">
-        <div>
-            <h1
-                class="text-3xl md:text-4xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white">
-                SHIFT GRID <span
-                    class="text-xs font-mono px-2 py-1 bg-blue-900/40 text-blue-300 border border-blue-500/30 rounded">PRE-ALPHA</span>
-            </h1>
-            <p class="text-sm text-slate-400 mt-1">Sperimenta la fluidità del movimento libero e l'ordine dello Snap
-                geometrico.</p>
-        </div>
-
-        <!-- Stato Corrente -->
-        <div class="flex items-center gap-4 bg-slate-900/80 border border-slate-800 px-4 py-2 rounded-xl">
-            <!-- Punteggio / Livello -->
-            <div class="text-xs text-slate-400">
-                PIANO: <span id="floor-counter" class="text-cyan-400 font-bold">1</span>
+<body>
+    <div class="sidebar sidebar-left">
+        <div class="w-full max-w-xs space-y-6">
+            <!-- Titolo -->
+            <div>
+                <h1
+                    class="text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-white">
+                    SHIFT GRID
+                </h1>
+                <span
+                    class="text-xs font-mono px-2 py-0.5 bg-blue-900/40 text-blue-300 border border-blue-500/30 rounded">PRE-ALPHA</span>
+                <p class="text-xs text-slate-400 mt-2">Manipola la percezione dello spazio geometrico.</p>
             </div>
-            <div class="h-4 w-px bg-slate-800"></div>
-            <div class="flex items-center gap-2">
-                <span class="text-xs text-slate-400 uppercase tracking-widest">Modalità:</span>
-                <div id="mode-badge"
-                    class="flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                    <i data-lucide="zap" class="w-4 h-4"></i>
-                    <span id="mode-text">LIBERA (Continuo)</span>
+
+            <!-- Stato Partita -->
+            <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400 uppercase tracking-widest">Piano</span>
+                    <span id="floor-counter" class="text-cyan-400 font-bold text-lg">1</span>
+                </div>
+                <div class="h-px bg-slate-800"></div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400 uppercase tracking-widest">Modalità</span>
+                    <div id="mode-badge"
+                        class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                        <i data-lucide="zap" class="w-3 h-3"></i>
+                        <span id="mode-text">LIBERA</span>
+                    </div>
+                </div>
+                <div class="h-px bg-slate-800"></div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400 uppercase tracking-widest">HP</span>
+                    <span id="hp-display" class="text-green-400 font-bold">100</span>
+                </div>
+            </div>
+
+            <!-- Controlli -->
+            <div class="bg-slate-900/40 border border-slate-800/60 p-3 rounded-xl space-y-3 text-[11px]">
+                <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Controlli</span>
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 text-[10px]">WASD</kbd>
+                        <span class="text-slate-400">Movimento</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 text-[10px]">SPACE</kbd>
+                        <span class="text-slate-400">Cambia modalità</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <kbd class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 text-[10px]">SHIFT</kbd>
+                        <span class="text-slate-400">Carica scatto</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Area di Gioco Centrale (Rapporto aspect-square 1:1 per rotazioni perfette) -->
-    <div id="canvas-container"
-        class="relative w-full max-w-4xl aspect-square bg-slate-950 border-2 border-slate-800 rounded-2xl overflow-hidden my-4">
+    <!-- AREA DI GIOCO CENTRALE: Quadrato perfetto -->
+    <div id="canvas-container">
         <canvas id="gameCanvas" class="w-full h-full block"></canvas>
-        <div class="scanlines rounded-2xl"></div>
+        <div class="scanlines"></div>
 
-        <!-- Schermata di Benvenuto / Overlay Istruzioni -->
+        <!-- Overlay Benvenuto (dentro il canvas) -->
         <div id="welcome-overlay"
-            class="absolute inset-0 bg-slate-950/98 flex flex-col items-center justify-start p-6 text-center z-30 overflow-y-auto">
-            <div class="max-w-md w-full my-auto space-y-5 py-4">
+            class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-30">
+            <div class="max-w-sm space-y-5">
                 <div
                     class="w-14 h-14 bg-gradient-to-tr from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/20">
                     <i data-lucide="gamepad-2" class="w-7 h-7 text-white"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-bold text-white mb-1">Benvenuto in Shift Grid</h2>
-                    <p class="text-slate-400 text-xs">Controlli un nucleo di energia geometrica bianco. Evita le minacce
-                        cromatiche e manipola la percezione dello spazio!</p>
+                    <h2 class="text-2xl font-bold text-white mb-1">Shift Grid</h2>
+                    <p class="text-slate-400 text-xs">Controlli un nucleo di energia. Evita le minacce e manipola lo
+                        spazio!</p>
                 </div>
 
-                <!-- Personalizzazione Partita (Griglia e Vivibilità) -->
-                <div class="bg-slate-900/50 p-4 border border-slate-800 rounded-xl space-y-4 text-left text-xs">
-                    <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Configura la tua
-                        Griglia</span>
-
-                    <!-- Dimensione Griglia (Quadrata) -->
+                <!-- Config Griglia -->
+                <div class="bg-slate-900/50 p-4 border border-slate-800 rounded-xl space-y-3 text-left text-xs">
+                    <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Configura Griglia</span>
                     <div class="space-y-1">
                         <label class="flex justify-between text-slate-300">
-                            <span>Dimensione Griglia (Quadrata):</span>
-                            <span id="grid-size-val" class="text-cyan-300 font-bold">14 x 14</span>
+                            <span>Dimensione:</span>
+                            <span id="grid-size-val" class="text-cyan-300 font-bold">20 x 20</span>
                         </label>
-                        <input id="grid-size-input" type="range" min="10" max="18" step="2" value="14"
+                        <input id="grid-size-input" type="range" min="10" max="40" step="2" value="20"
                             class="w-full accent-cyan-500 bg-slate-950 rounded-lg h-2 cursor-pointer">
                     </div>
-
-                    <!-- Percentuale Spazio Privo di Muri -->
                     <div class="space-y-1">
                         <label class="flex justify-between text-slate-300">
-                            <span>Spazio Privo di Muri (Vivibilità):</span>
+                            <span>Spazio Libero:</span>
                             <span id="empty-space-val" class="text-cyan-300 font-bold">60%</span>
                         </label>
                         <input id="empty-space-input" type="range" min="40" max="80" step="5" value="60"
@@ -141,30 +222,14 @@
                     </div>
                 </div>
 
-                <div
-                    class="grid grid-cols-2 gap-3 text-left text-[11px] bg-slate-900/30 p-3 border border-slate-800/60 rounded-xl">
-                    <div class="space-y-1">
-                        <span class="text-cyan-400 font-semibold uppercase block">Movimento</span>
-                        <div class="flex items-center gap-1.5"><kbd
-                                class="px-1.5 py-0.5 bg-slate-800 rounded text-slate-300">W A S D</kbd> o <span
-                                class="text-slate-400">Frecce</span></div>
-                    </div>
-                    <div class="space-y-1">
-                        <span class="text-cyan-400 font-semibold uppercase block">Innesco Scatto</span>
-                        <div class="text-slate-400">Tieni premuto <span class="text-white font-semibold">Shift</span> o
-                            <span class="text-white font-semibold">Tasto Dx Mouse</span>. Rilascia!
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-3 pt-1">
+                <div class="flex flex-col gap-3">
                     <button id="bestiary-open-btn"
-                        class="flex-1 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2">
+                        class="py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2">
                         <i data-lucide="book-open" class="w-4 h-4"></i>
-                        Apri Bestiario
+                        Bestiario
                     </button>
                     <button id="start-btn"
-                        class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold text-sm rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                        class="py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-bold text-sm rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
                         Inizia Avventura
                     </button>
                 </div>
@@ -173,92 +238,78 @@
 
         <!-- Overlay Bestiario -->
         <div id="bestiary-overlay"
-            class="absolute inset-0 bg-slate-950/98 hidden flex-col items-center justify-start p-6 z-40 overflow-y-auto">
-            <div class="w-full max-w-2xl space-y-6 py-4">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                    <h2 class="text-2xl font-bold text-cyan-400 flex items-center gap-2">
-                        <i data-lucide="book-open" class="w-6 h-6"></i>
-                        ANALISI CREATURE CROMATICHE
+            class="absolute inset-0 bg-slate-950/98 hidden flex-col items-center justify-start p-4 z-40 overflow-y-auto">
+            <div class="w-full max-w-lg space-y-4 py-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                    <h2 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                        BESTIARIO
                     </h2>
                     <button id="bestiary-close-btn"
                         class="p-1 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-white transition-all">
-                        <i data-lucide="x" class="w-6 h-6"></i>
+                        <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
-
-                <!-- Lista Mostri -->
-                <div class="grid gap-4 sm:grid-cols-2 text-left">
-
+                <div class="grid gap-3 text-left">
                     <!-- Inseguitore -->
-                    <div class="p-4 bg-slate-900/50 border border-red-500/20 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span class="w-5 h-5 bg-red-500 rounded shadow-lg shadow-red-500/50"></span>
-                            <h3 class="font-bold text-white text-base">Inseguitore Rosso</h3>
+                    <div class="p-3 bg-slate-900/50 border border-red-500/20 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-red-500 rounded shadow-lg shadow-red-500/50"></span>
+                            <h3 class="font-bold text-white text-sm">Inseguitore Rosso</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Comportamento base. Ti segue in modo dinamico e carica scatti
-                            rapidi per intercettarti.</p>
-                        <div class="text-[10px] text-red-400 font-mono">VITA: Elevata | AGGRESSIVITÀ: Media</div>
+                        <p class="text-[10px] text-slate-400">Ti segue e carica scatti rapidi.</p>
                     </div>
-
                     <!-- Ciclico -->
-                    <div class="p-4 bg-slate-900/50 border border-orange-500/20 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span
-                                class="w-5 h-5 bg-orange-500 rounded shadow-lg shadow-orange-500/50 flex items-center justify-center text-[10px] text-white">🡒</span>
-                            <h3 class="font-bold text-white text-base">Ciclico Arancione</h3>
+                    <div class="p-3 bg-slate-900/50 border border-orange-500/20 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-orange-500 rounded shadow-lg shadow-orange-500/50"></span>
+                            <h3 class="font-bold text-white text-sm">Ciclico Arancione</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Vincolato alla griglia. Si muove a ritmi elastici e cambia
-                            direzione in senso orario quando trova ostacoli.</p>
-                        <div class="text-[10px] text-orange-400 font-mono">VITA: Media | AGGRESSIVITÀ: Prevedibile</div>
+                        <p class="text-[10px] text-slate-400">Si muove a ritmi elastici, ruota in senso orario.</p>
                     </div>
-
                     <!-- Berserker -->
-                    <div class="p-4 bg-slate-900/50 border border-red-900/30 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span class="w-5 h-5 bg-red-950 border border-red-700 rounded shadow-lg"></span>
-                            <h3 class="font-bold text-white text-base">Berserker Rosso Scuro</h3>
+                    <div class="p-3 bg-slate-900/50 border border-red-900/30 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-red-950 border border-red-700 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-sm">Berserker</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Frenetico ed estremamente rapido. Carica ed esegue scatti
-                            eccezionalmente lunghi che coprono tutta l'area.</p>
-                        <div class="text-[10px] text-red-600 font-mono">VITA: Bassissima (1 HP) | VELOCITÀ: Estrema
-                        </div>
+                        <p class="text-[10px] text-slate-400">Frenetico, scatti lunghissimi. 1 HP.</p>
                     </div>
-
                     <!-- Tank -->
-                    <div class="p-4 bg-slate-900/50 border border-red-300/20 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span class="w-5 h-5 bg-red-300 rounded shadow-lg"></span>
-                            <h3 class="font-bold text-white text-base">Tank Rosso Chiaro</h3>
+                    <div class="p-3 bg-slate-900/50 border border-red-300/20 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-red-300 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-sm">Tank Rosso Chiaro</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Un colosso massiccio e lento. Possiede moltissima energia
-                            vitale ed esegue impatti a corto raggio devastanti.</p>
-                        <div class="text-[10px] text-red-300 font-mono">VITA: Altissima (6 HP) | VELOCITÀ: Molto Lenta
-                        </div>
+                        <p class="text-[10px] text-slate-400">Lento, massiccio, 6 HP.</p>
                     </div>
-
                     <!-- Cacciatore -->
-                    <div class="p-4 bg-slate-900/50 border border-indigo-500/20 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span class="w-5 h-5 bg-indigo-500 rounded shadow-lg"></span>
-                            <h3 class="font-bold text-white text-base">Cacciatore Blu-Viola</h3>
+                    <div class="p-3 bg-slate-900/50 border border-indigo-500/20 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-indigo-500 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-sm">Cacciatore Blu-Viola</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Predatore tattico. Tenta di allinearsi perfettamente sui tuoi
-                            assi verticali o orizzontali per colpirti a colpo sicuro.</p>
-                        <div class="text-[10px] text-indigo-400 font-mono">VITA: Media | PRECISIONE: Eccellente</div>
+                        <p class="text-[10px] text-slate-400">Si allinea sui tuoi assi per colpirti.</p>
                     </div>
-
                     <!-- Gravitor -->
-                    <div class="p-4 bg-slate-900/50 border border-purple-500/20 rounded-xl space-y-2">
-                        <div class="flex items-center gap-3">
-                            <span class="w-5 h-5 bg-purple-500 rounded shadow-lg"></span>
-                            <h3 class="font-bold text-white text-base">Gravitor Viola</h3>
+                    <div class="p-3 bg-slate-900/50 border border-purple-500/20 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="w-4 h-4 bg-purple-500 rounded shadow-lg"></span>
+                            <h3 class="font-bold text-white text-sm">Gravitor Viola</h3>
                         </div>
-                        <p class="text-xs text-slate-400">Anomalia gravitazionale (Piano 6+). Non si muove e non fa
-                            danno, ma ruota periodicamente lo schermo di 90°!</p>
-                        <div class="text-[10px] text-purple-400 font-mono">VITA: Elevata | EFFETTO: Rotazione Spaziale
-                        </div>
+                        <p class="text-[10px] text-slate-400">Ruota lo schermo di 90°. Piano 6+.</p>
                     </div>
-
+                    <!-- Boss -->
+                    <div class="p-3 bg-slate-900/50 border border-purple-500/30 rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="w-5 h-5 bg-purple-900 border-2 border-purple-400 rounded shadow-lg shadow-purple-500/50 flex items-center justify-center text-[9px] text-white">☠</span>
+                            <h3 class="font-bold text-white text-sm">BOSS <span
+                                    class="text-purple-400 text-[10px]">(ogni 5 piani)</span></h3>
+                        </div>
+                        <p class="text-[10px] text-slate-400">3x3, inamovibile, scudi segmentati. Spara 3 tipi di
+                            proiettili. Rimbalzo vettoriale.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -273,8 +324,7 @@
                 </div>
                 <div>
                     <h2 class="text-3xl font-bold text-white mb-2">Connessione Interrotta</h2>
-                    <p id="gameover-text" class="text-red-300 text-sm">Il tuo nucleo energetico è collassato. Ritenta la
-                        scalata del Shift Grid.</p>
+                    <p id="gameover-text" class="text-red-300 text-sm">Il tuo nucleo energetico è collassato.</p>
                 </div>
                 <button id="restart-btn"
                     class="w-full py-3 bg-white text-slate-950 font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
@@ -284,6 +334,49 @@
                     class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-700 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
                     Torna al Menu
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR DESTRA: Info aggiuntive / Legenda -->
+    <div class="sidebar sidebar-right">
+        <div class="w-full max-w-xs space-y-6">
+            <div class="bg-slate-900/40 border border-slate-800/60 p-3 rounded-xl space-y-3 text-[11px]">
+                <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Obiettivo</span>
+                <p class="text-slate-400 text-xs leading-relaxed">
+                    Trova la <span class="text-yellow-400 font-semibold">chiave</span> sconfiggendo il nemico che la
+                    possiede.
+                    Raggiungi la <span class="text-white font-semibold">porta</span> per avanzare al piano successivo.
+                </p>
+            </div>
+
+            <div class="bg-slate-900/40 border border-slate-800/60 p-3 rounded-xl space-y-3 text-[11px]">
+                <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Modalità</span>
+                <div class="space-y-2">
+                    <div class="flex items-start gap-2">
+                        <span class="w-2 h-2 bg-cyan-400 rounded-full mt-1 flex-shrink-0"></span>
+                        <div>
+                            <span class="text-white font-semibold">LIBERA</span>
+                            <p class="text-slate-400 text-[10px]">Movimento fluido sub-pixel. Nemici in tempo reale.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="w-2 h-2 bg-violet-400 rounded-full mt-1 flex-shrink-0"></span>
+                        <div>
+                            <span class="text-white font-semibold">SNAP (Griglia)</span>
+                            <p class="text-slate-400 text-[10px]">Turni discreti. Strategia passo-passo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/40 border border-slate-800/60 p-3 rounded-xl space-y-2 text-[11px]">
+                <span class="text-cyan-400 font-semibold uppercase block tracking-wider">Boss</span>
+                <p class="text-slate-400 text-[10px] leading-relaxed">
+                    Ogni <span class="text-purple-400 font-bold">5 piani</span> appare un Boss.
+                    Colpiscilo solo attraverso i <span class="text-white font-semibold">buchi</span> nello scudo.
+                    In modalità griglia i proiettili si congelano e gli scudi si alternano.
+                </p>
             </div>
         </div>
     </div>
@@ -314,9 +407,9 @@
         const emptySpaceVal = document.getElementById('empty-space-val');
 
         // Dimensioni logiche della griglia (dinamiche e sempre quadrate)
-        let GRID_SIZE = 14;
-        let GRID_COLS = 14;
-        let GRID_ROWS = 14;
+        let GRID_SIZE = 20;
+        let GRID_COLS = 20;
+        let GRID_ROWS = 20;
         let cellSize = 0; // Verrà calcolato dinamicamente in base alle dimensioni del Canvas
         let targetEmptyPercentage = 0.60; // Percentuale di celle svuotate dai muri
 
@@ -344,6 +437,13 @@
         let keyCollected = false; // Se la chiave è stata raccolta
         let keyEnemyIndex = -1;    // Index del nemico che spawna la chiave
         let circuitAnimation = null;
+        let canMove = true;
+
+        // --- BOSS STATE ---
+        let boss = null;          // Oggetto boss (null se non è un livello boss)
+        let bossProjectiles = []; // Proiettili del boss
+        let isBossLevel = false;
+        let bossShieldState = 0;  // 0 = scudi attivi, 1 = buchi attivi (in grid mode si alternano)
 
         // Struttura del Giocatore
         const player = {
@@ -352,7 +452,7 @@
             x: 0,             // Posizione sub-pixel attuale (in modalità libera)
             y: 0,
             size: 24,         // Dimensione visiva
-            speed: 5,         // Velocità in modalità libera
+            speed: 2.8,         // Velocità in modalità libera
 
             // Statistiche Vitali
             hp: 100,
@@ -414,9 +514,11 @@
         // Inizializza dimensioni del canvas e della griglia in modo responsivo
         function resizeCanvas() {
             const container = canvas.parentElement;
+            // Il container è già un quadrato perfetto grazie al CSS (100vh x 100vh)
             canvas.width = container.clientWidth;
             canvas.height = container.clientHeight;
 
+            // La griglia si adatta al quadrato
             cellSize = canvas.width / GRID_COLS;
             player.size = cellSize * 0.8;
 
@@ -427,7 +529,7 @@
                 player.y = player.gridY * cellSize + (cellSize - player.size) / 2;
             }
 
-            // Sincronizza anche i nemici se attivi
+            // Sincronizza i nemici
             enemies.forEach(enemy => {
                 enemy.size = cellSize * 0.75;
                 if (!enemy.isAnimating) {
@@ -435,6 +537,13 @@
                     enemy.y = enemy.gridY * cellSize + (cellSize - enemy.size) / 2;
                 }
             });
+
+            // Sincronizza il boss se presente
+            if (boss) {
+                boss.size = cellSize * 3;
+                boss.x = boss.gridX * cellSize;
+                boss.y = boss.gridY * cellSize;
+            }
         }
 
         // Posiziona il giocatore al centro di una cella libera della griglia
@@ -539,6 +648,16 @@
 
             // Spawna Nemici in posizioni libere lontane dal giocatore
             spawnEnemies(grid);
+            if (floorLevel % 5 === 0) {
+                // In livello boss: rimuovi la chiave dai nemici normali
+                enemies.forEach(e => e.hasKey = false);
+                keyEnemyIndex = -1;
+                spawnBoss(grid);
+            } else {
+                boss = null;
+                bossProjectiles = [];
+                isBossLevel = false;
+            }
         }
 
         // Spawna nemici basandosi sul piano corrente e sulle impostazioni correnti
@@ -741,6 +860,375 @@
             circuitAnimation = null;
         }
 
+        // Genera il Boss (ogni 5 livelli)
+        function spawnBoss(grid) {
+            const bossSize = cellSize * 3;
+            // Trova una zona libera 3x3 lontana dal player
+            let col = 0, row = 0;
+            let attempts = 0;
+            let found = false;
+
+            while (!found && attempts < 200) {
+                col = Math.floor(Math.random() * (GRID_COLS - 3));
+                row = Math.floor(Math.random() * (GRID_ROWS - 3));
+                const distToPlayer = Math.hypot(col + 1.5 - player.gridX, row + 1.5 - player.gridY);
+
+                if (distToPlayer > 5) {
+                    let free = true;
+                    for (let dr = 0; dr < 3 && free; dr++) {
+                        for (let dc = 0; dc < 3 && free; dc++) {
+                            if (grid[row + dr][col + dc]) free = false;
+                        }
+                    }
+                    if (free) found = true;
+                }
+                attempts++;
+            }
+
+            if (!found) {
+                col = Math.floor(GRID_COLS / 2) - 1;
+                row = Math.floor(GRID_ROWS / 2) - 1;
+            }
+
+            // Genera scudi: 8 segmenti, alcuni attivi (bloccano), altri sono buchi
+            const shieldSegments = [];
+            const numShields = 5; // 5 scudi, 3 buchi
+            const indices = [0, 1, 2, 3, 4, 5, 6, 7];
+            // Shuffle e prendi i primi numShields
+            for (let i = indices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            const shieldIndices = new Set(indices.slice(0, numShields));
+            for (let i = 0; i < 8; i++) {
+                shieldSegments.push(shieldIndices.has(i)); // true = scudo attivo
+            }
+
+            boss = {
+                gridX: col,
+                gridY: row,
+                x: col * cellSize,
+                y: row * cellSize,
+                size: bossSize,
+                hp: 20,
+                maxHp: 20,
+                shieldSegments: shieldSegments,
+                shootCooldown: 60,
+                pulsePhase: 0,
+                hasKey: true,      // Solo il boss droppa la chiave in questo livello
+                defeated: false    // Flag per evitare di droppare la chiave più volte
+            };
+
+            bossProjectiles = [];
+            isBossLevel = true;
+            bossShieldState = 0;
+        }
+
+        function dropKeyFromBoss() {
+            if (keyDrop || !boss || !boss.hasKey || boss.defeated) return;
+            boss.defeated = true;
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 3 + Math.random() * 5;
+            const cx = boss.x + boss.size / 2;
+            const cy = boss.y + boss.size / 2;
+
+            keyDrop = {
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 12,
+                alpha: 1,
+                collected: false,
+                bounceElasticity: 0.8,
+                friction: 0.98
+            };
+            spawnParticles(cx, cy, '#fbbf24', 25);
+        }
+
+        // Il boss spara un proiettile casuale tra 3 tipi
+        function bossShoot() {
+            if (!boss || boss.hp <= 0) return;
+            if (snapMode) return; // In grid mode non spara
+
+            const bossCX = boss.x + boss.size / 2;
+            const bossCY = boss.y + boss.size / 2;
+
+            const typeRoll = Math.random();
+            let pType;
+            if (typeRoll < 0.4) pType = 'random';
+            else if (typeRoll < 0.75) pType = 'bouncing';
+            else pType = 'homing';
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 3.5;
+
+            const proj = {
+                x: bossCX,
+                y: bossCY,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 18,
+                type: pType,
+                bounces: 0,
+                maxBounces: pType === 'bouncing' ? 3 : 0,
+                life: 600,
+                locked: false // in grid mode si bloccano
+            };
+
+            // Se homing, punta verso il player
+            if (pType === 'homing') {
+                const dx = (player.x + player.size / 2) - bossCX;
+                const dy = (player.y + player.size / 2) - bossCY;
+                const len = Math.hypot(dx, dy) || 1;
+                proj.vx = (dx / len) * speed;
+                proj.vy = (dy / len) * speed;
+                proj.homingAngle = Math.atan2(dy, dx);
+            }
+
+            bossProjectiles.push(proj);
+        }
+
+        // Aggiorna i proiettili del boss
+        function updateBossProjectiles() {
+            if (snapMode) return; // In grid mode i proiettili sono congelati
+
+            for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+                const p = bossProjectiles[i];
+                p.life--;
+
+                if (p.life <= 0) {
+                    bossProjectiles.splice(i, 1);
+                    continue;
+                }
+
+                // Homing: corregge la traiettoria
+                if (p.type === 'homing' && !p.locked) {
+                    const dx = (player.x + player.size / 2) - p.x;
+                    const dy = (player.y + player.size / 2) - p.y;
+                    const targetAngle = Math.atan2(dy, dx);
+                    const currentAngle = Math.atan2(p.vy, p.vx);
+
+                    let angleDiff = targetAngle - currentAngle;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                    if (Math.abs(angleDiff) > Math.PI / 3) {
+                        p.locked = true; // smette di inseguire
+                    } else {
+                        const turnRate = 0.05;
+                        const newAngle = currentAngle + Math.sign(angleDiff) * Math.min(Math.abs(angleDiff), turnRate);
+                        const speed = Math.hypot(p.vx, p.vy);
+                        p.vx = Math.cos(newAngle) * speed;
+                        p.vy = Math.sin(newAngle) * speed;
+                    }
+                }
+
+                let nextX = p.x + p.vx;
+                let nextY = p.y + p.vy;
+
+                // Collisione con bordi canvas
+                let bouncedOffEdge = false;
+                if (nextX < 0 || nextX > canvas.width) {
+                    if (p.type === 'bouncing' && p.bounces < p.maxBounces) {
+                        p.vx = -p.vx;
+                        nextX = nextX < 0 ? 0 : canvas.width;
+                        p.bounces++;
+                        bouncedOffEdge = true;
+                    } else {
+                        bossProjectiles.splice(i, 1);
+                        continue;
+                    }
+                }
+                if (nextY < 0 || nextY > canvas.height) {
+                    if (p.type === 'bouncing' && p.bounces < p.maxBounces && !bouncedOffEdge) {
+                        p.vy = -p.vy;
+                        nextY = nextY < 0 ? 0 : canvas.height;
+                        p.bounces++;
+                    } else if (!bouncedOffEdge) {
+                        bossProjectiles.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                // Collisione con muri
+                const col = Math.floor(nextX / cellSize);
+                const row = Math.floor(nextY / cellSize);
+                if (isCellBlocked(col, row)) {
+                    if (p.type === 'bouncing' && p.bounces < p.maxBounces) {
+                        const cellCX = col * cellSize + cellSize / 2;
+                        const cellCY = row * cellSize + cellSize / 2;
+                        const relX = p.x - cellCX;
+                        const relY = p.y - cellCY;
+                        if (Math.abs(relX) > Math.abs(relY)) {
+                            p.vx = -p.vx;
+                            nextX = p.x;
+                        } else {
+                            p.vy = -p.vy;
+                            nextY = p.y;
+                        }
+                        p.bounces++;
+                    } else {
+                        bossProjectiles.splice(i, 1);
+                        continue;
+                    }
+                }
+
+                p.x = nextX;
+                p.y = nextY;
+
+                // Collisione con il player
+                const pdx = (player.x + player.size / 2) - p.x;
+                const pdy = (player.y + player.size / 2) - p.y;
+                if (Math.hypot(pdx, pdy) < (player.size / 2 + p.size / 2)) {
+                    damagePlayer(10);
+                    spawnParticles(p.x, p.y, '#ffffff', 8);
+                    bossProjectiles.splice(i, 1);
+                }
+            }
+        }
+
+        // Il player spinge i proiettili in grid mode (e anche in free mode)
+        function pushBossProjectiles() {
+            const pushRange = player.size * 0.8;
+            bossProjectiles.forEach(p => {
+                const dx = (player.x + player.size / 2) - p.x;
+                const dy = (player.y + player.size / 2) - p.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < pushRange && dist > 0) {
+                    const pushStrength = snapMode ? cellSize : 4;
+                    const nx = -dx / dist;
+                    const ny = -dy / dist;
+                    p.x += nx * pushStrength;
+                    p.y += ny * pushStrength;
+                    // Se il proiettile finisce in un muro, viene distrutto
+                    const col = Math.floor(p.x / cellSize);
+                    const row = Math.floor(p.y / cellSize);
+                    if (isCellBlocked(col, row) || p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+                        p.life = 0;
+                    }
+                }
+            });
+        }
+
+        // Gestisce la collisione del player col Boss (rimbalzo vettoriale, non danno)
+        function handleBossCollision() {
+            if (!boss || boss.hp <= 0 || !canMove) return;
+
+            // AABB collision precisa
+            if (player.x < boss.x + boss.size &&
+                player.x + player.size > boss.x &&
+                player.y < boss.y + boss.size &&
+                player.y + player.size > boss.y) {
+
+                const playerCX = player.x + player.size / 2;
+                const playerCY = player.y + player.size / 2;
+                const bossCX = boss.x + boss.size / 2;
+                const bossCY = boss.y + boss.size / 2;
+
+                // Calcola normale basandosi sul lato del boss colpito (non sul centro)
+                const relX = playerCX - bossCX;
+                const relY = playerCY - bossCY;
+                let nx, ny;
+
+                if (Math.abs(relX) / (boss.size / 2) > Math.abs(relY) / (boss.size / 2)) {
+                    nx = Math.sign(relX);
+                    ny = 0;
+                } else {
+                    nx = 0;
+                    ny = Math.sign(relY);
+                }
+
+                // Espelle il player fuori dal boss (evita di rimanere incastrato)
+                const overlapX = Math.min(player.x + player.size - boss.x, boss.x + boss.size - player.x);
+                const overlapY = Math.min(player.y + player.size - boss.y, boss.y + boss.size - player.y);
+
+                if (Math.abs(nx) > 0) {
+                    player.x += nx * (overlapX + 1);
+                } else {
+                    player.y += ny * (overlapY + 1);
+                }
+
+                if (player.isDashing) {
+                    // ADDIZIONE VETTORIALE: rimbalzo riflesso + inerzia dash
+                    const dashVX = player.chargeDir.x * (13 + player.charge * 8);
+                    const dashVY = player.chargeDir.y * (13 + player.charge * 8);
+
+                    // Riflessione del dash rispetto alla normale
+                    const dot = dashVX * nx + dashVY * ny;
+                    const reflectX = dashVX - 2 * dot * nx;
+                    const reflectY = dashVY - 2 * dot * ny;
+
+                    // Somma vettoriale
+                    player.x += reflectX * 0.4 + nx * 6;
+                    player.y += reflectY * 0.4 + ny * 6;
+
+                    // Controlla colpo su scudo/buco
+                    handleBossShieldHit(nx, ny);
+                    shakeAmount = 8;
+                } else {
+                    // Rimbalzo semplice
+                    player.x += nx * 3;
+                    player.y += ny * 3;
+                }
+
+                triggerPlayerJelly(nx, ny);
+            }
+        }
+
+        function handleBossShieldHit(nx, ny) {
+            if (!boss) return;
+
+            // Determina segmento colpito in base alla normale (asse allineato)
+            // 8 segmenti distribuiti: 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
+            const angle = Math.atan2(ny, nx);
+            let segmentIndex = Math.floor(((angle + Math.PI) / (Math.PI * 2)) * 8) % 8;
+
+            // Applica offset della modalità snap
+            let effectiveIndex = segmentIndex;
+            if (snapMode) {
+                effectiveIndex = (segmentIndex + bossShieldState * 4) % 8;
+            }
+
+            const isShield = boss.shieldSegments[effectiveIndex];
+
+            const bossCX = boss.x + boss.size / 2;
+            const bossCY = boss.y + boss.size / 2;
+            const hitX = bossCX + nx * boss.size / 2;
+            const hitY = bossCY + ny * boss.size / 2;
+
+            if (isShield) {
+                // Rimbalzo sullo scudo, NESSUN danno
+                spawnParticles(hitX, hitY, '#ffffff', 15);
+                shakeAmount = 6;
+            } else {
+                // Colpito un buco: DANNO al boss
+                boss.hp = Math.max(0, boss.hp - 1);
+                spawnParticles(hitX, hitY, '#a855f7', 20);
+                shakeAmount = 12;
+
+                if (boss.hp <= 0) {
+                    // Boss sconfitto: drop chiave, poi flusso normale
+                    spawnParticles(bossCX, bossCY, '#ffffff', 50);
+                    dropKeyFromBoss();
+                }
+            }
+        }
+
+        // In grid mode, alterna scudi/buchi a ogni turno del player
+        function toggleBossShieldsOnTurn() {
+            if (!boss || !snapMode) return;
+            bossShieldState = 1 - bossShieldState;
+            // Inverti logicamente: se era 0 (scudi attivi), ora i buchi sono attivi
+            // Implementazione: shifta gli indici
+            const shifted = [];
+            for (let i = 0; i < 8; i++) {
+                shifted.push(boss.shieldSegments[(i + bossShieldState * 4) % 8]);
+            }
+            // Non modifichiamo l'array, usiamo bossShieldState come offset nel rendering
+        }
+
         // Danno al giocatore (immune se sta scattando)
         function damagePlayer(amount) {
             if (player.isDashing || !isGameRunning) return;
@@ -806,6 +1294,11 @@
 
         // Reset completo al Game Over
         function resetGame() {
+            boss = null;
+            bossProjectiles = [];
+            isBossLevel = false;
+            bossShieldState = 0;
+
             floorLevel = 1;
             floorCounter.textContent = floorLevel;
             player.hp = 100;
@@ -1026,6 +1519,7 @@
 
         // Spinta manuale dei muri adiacenti
         function handleWallPushing(inputX, inputY) {
+            if (!canMove && snapMode) return;
             if (inputX === 0 && inputY === 0) return;
 
             const len = Math.hypot(inputX, inputY);
@@ -1111,7 +1605,7 @@
 
         // Movimento discreto in modalità Snap
         function moveInSnap(dirX, dirY) {
-            if (player.isDashing || player.isCharging) return;
+            if (player.isDashing || player.isCharging || !canMove) return;
             const nextGridX = player.gridX + dirX;
             const nextGridY = player.gridY + dirY;
 
@@ -1129,6 +1623,8 @@
                 const destX = nextGridX * cellSize + (cellSize - player.size) / 2;
                 const destY = nextGridY * cellSize + (cellSize - player.size) / 2;
 
+                canMove = false;
+
                 anime({
                     targets: player,
                     x: destX,
@@ -1139,8 +1635,16 @@
                         player.x = destX;
                         player.y = destY;
 
-                        // SNAP MODE TURN: Quando il giocatore si muove, tutti i nemici eseguono un turno
+                        // Attendi 100ms prima di permettere il prossimo input
+                        setTimeout(() => {
+                            canMove = true;
+                        }, 100);
+
+                        // SNAP MODE TURN
                         triggerEnemiesTurn();
+                        if (isBossLevel && boss) {
+                            toggleBossShieldsOnTurn();
+                        }
                     }
                 });
             } else {
@@ -1203,6 +1707,12 @@
             player.isDashing = true;
 
             if (snapMode) {
+                if (!canMove) {
+                    player.isDashing = false;
+                    player.charge = 0;
+                    return;
+                }
+                canMove = false;
                 let snapDirX = 0, snapDirY = 0;
                 if (Math.abs(player.chargeDir.x) > Math.abs(player.chargeDir.y)) {
                     snapDirX = player.chargeDir.x > 0 ? 1 : -1;
@@ -1253,22 +1763,30 @@
                     duration: 180,
                     easing: 'easeOutQuad',
                     complete: () => {
-                        player.x = destX;
-                        player.y = destY;
-                        player.isDashing = false;
-                        player.charge = 0;
-                        if (hitAWall) {
-                            triggerWallHit(snapDirX, snapDirY, wallCol, wallRow);
-                            triggerPlayerJelly(snapDirX, snapDirY);
-                        }
-                        triggerEnemiesTurn(); // Lo scatto in modalità Snap consuma anche il turno
+                    player.x = destX;
+                    player.y = destY;
+                    player.isDashing = false;
+                    player.charge = 0;
+
+                    setTimeout(() => {
+                        canMove = true;
+                    }, 100);
+
+                    if (hitAWall) {
+                        triggerWallHit(snapDirX, snapDirY, wallCol, wallRow);
+                        triggerPlayerJelly(snapDirX, snapDirY);
                     }
+                    triggerEnemiesTurn();
+                    if (isBossLevel && boss) {
+                        toggleBossShieldsOnTurn();
+                    }
+                }
                 });
 
             } else {
                 // MODALITÀ LIBERA: Movimento sub-pixel velocissimo
-                const dashSpeedValue = 13 + player.charge * 13;
-                const totalSteps = Math.round(7 + player.charge * 12);
+                const dashSpeedValue = 9 + player.charge * 7;
+                const totalSteps = Math.round(5 + player.charge * 5);
                 let currentStep = 0;
 
                 function dashTick() {
@@ -1516,47 +2034,44 @@
 
             // Collisione quando il giocatore entra nella porta
             if (dist < cellSize * 0.6) {
-                // **NUOVO: Animazione stagger grid sulle celle**
-                const gridCells = [];
-                for (let r = 0; r < GRID_ROWS; r++) {
-                    for (let c = 0; c < GRID_COLS; c++) {
-                        gridCells.push({
-                            col: c,
-                            row: r,
-                            opacity: 1,
-                            scale: 1
-                        });
-                    }
+            // Animazione stagger grid
+            const gridCells = [];
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    gridCells.push({ col: c, row: r, opacity: 1, scale: 1 });
                 }
-
-                anime({
-                    targets: gridCells,
-                    opacity: 0,
-                    scale: 0.5,
-                    duration: 300,
-                    delay: anime.stagger(10, { grid: [GRID_COLS, GRID_ROWS], from: 'center' }),
-                    easing: 'easeInQuad'
-                });
-
-                // Memorizza la posizione della porta per il prossimo livello
-                lastDoorCol = exitDoor.col;
-                lastDoorRow = exitDoor.row;
-
-                // Avanza al livello successivo
-                floorLevel++;
-                floorCounter.textContent = floorLevel;
-                shakeAmount = 6;
-
-                // Reset stato chiave
-                keyDrop = null;
-                exitDoor = null;
-                circuitAnimation = null;
-
-                // Attendi la fine dell'animazione prima di generare il nuovo livello
-                setTimeout(() => {
-                    generateFloor();
-                }, 400);
             }
+
+            anime({
+                targets: gridCells,
+                opacity: 0,
+                scale: 0.5,
+                duration: 300,
+                delay: anime.stagger(10, { grid: [GRID_COLS, GRID_ROWS], from: 'center' }),
+                easing: 'easeInQuad'
+            });
+
+            lastDoorCol = exitDoor.col;
+            lastDoorRow = exitDoor.row;
+
+            floorLevel++;
+            floorCounter.textContent = floorLevel;
+            shakeAmount = 6;
+
+            // RESET COMPLETO: chiave, porta, circuito, boss, proiettili
+            keyDrop = null;
+            exitDoor = null;
+            circuitAnimation = null;
+            keyCollected = false;
+            boss = null;
+            bossProjectiles = [];
+            isBossLevel = false;
+            bossShieldState = 0;
+
+            setTimeout(() => {
+                generateFloor();
+            }, 400);
+        }
         }
 
         // --- LOGICA E IA DEI NEMICI ---
@@ -2357,7 +2872,7 @@
                     } else {
                         const startX = player.x + player.size / 2;
                         const startY = player.y + player.size / 2;
-                        const maxLen = 80 + player.charge * 140;
+                        const maxLen = 55 + player.charge * 90;
 
                         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                         ctx.setLineDash([4, 4]);
@@ -2597,6 +3112,163 @@
                 ctx.restore();
             });
 
+            // 5.5 DISEGNA IL BOSS
+            if (boss && boss.hp > 0) {
+                ctx.save();
+                const bx = boss.x;
+                const by = boss.y;
+                const bs = boss.size;
+                const bcx = bx + bs / 2;
+                const bcy = by + bs / 2;
+
+                // Corpo del boss (quadrato scuro con bordo)
+                boss.pulsePhase += 0.03;
+                const pulse = 1 + Math.sin(boss.pulsePhase) * 0.02;
+
+                ctx.translate(bcx, bcy);
+                ctx.scale(pulse, pulse);
+                ctx.translate(-bcx, -bcy);
+
+                // Corpo principale
+                ctx.fillStyle = '#1a0a2e';
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(bx + 4, by + 4, bs - 8, bs - 8, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                // Barra della vita radiale "torta quadrata" (Just Shapes & Beats style)
+                // Riempie il quadrato in senso orario partendo dall'alto
+                const hpRatio = boss.hp / boss.maxHp;
+                const totalSegments = 8;
+                const filledSegments = Math.ceil(hpRatio * totalSegments);
+
+                // Disegna "fette" del quadrato
+                const halfSize = (bs - 16) / 2;
+                const innerHalf = halfSize * 0.3;
+
+                for (let i = 0; i < totalSegments; i++) {
+                    const isFilled = i < filledSegments;
+                    const isPartial = (i === filledSegments - 1) && (hpRatio * totalSegments) % 1 !== 0;
+
+                    // Calcola i 4 vertici della fetta (dal centro verso l'esterno)
+                    // Le fette sono triangoli dal centro ai bordi del quadrato
+                    const startAngle = (i / totalSegments) * Math.PI * 2 - Math.PI / 2;
+                    const endAngle = ((i + 1) / totalSegments) * Math.PI * 2 - Math.PI / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(bcx, bcy);
+
+                    // Interpola lungo il perimetro del quadrato
+                    const perimPoints = getSquarePerimeterPoints(bcx, bcy, halfSize, startAngle, endAngle);
+                    perimPoints.forEach(pt => ctx.lineTo(pt.x, pt.y));
+
+                    ctx.closePath();
+
+                    if (isFilled) {
+                        const alpha = isPartial ? 0.5 + 0.5 * ((hpRatio * totalSegments) % 1) : 1.0;
+                        ctx.fillStyle = `rgba(168, 85, 247, ${alpha * 0.7})`;
+                    } else {
+                        ctx.fillStyle = 'rgba(30, 10, 50, 0.6)';
+                    }
+                    ctx.fill();
+
+                    // Bordo della fetta
+                    ctx.strokeStyle = isFilled ? 'rgba(192, 132, 252, 0.8)' : 'rgba(100, 50, 150, 0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // Disegna gli SCUDI (segmenti bianchi attorno al boss)
+                for (let i = 0; i < 8; i++) {
+                    // In grid mode, alterna con offset
+                    let effectiveIndex = i;
+                    if (snapMode) {
+                        effectiveIndex = (i + bossShieldState * 4) % 8;
+                    }
+                    const isShield = boss.shieldSegments[effectiveIndex];
+
+                    const segAngle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+                    const segMidAngle = ((i + 0.5) / 8) * Math.PI * 2 - Math.PI / 2;
+
+                    const shieldDist = halfSize + 8;
+                    const sx = bcx + Math.cos(segMidAngle) * shieldDist;
+                    const sy = bcy + Math.sin(segMidAngle) * shieldDist;
+
+                    if (isShield) {
+                        // Disegna segmento scudo bianco
+                        const segLen = halfSize * 0.7;
+                        const perpX = -Math.sin(segMidAngle);
+                        const perpY = Math.cos(segMidAngle);
+
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 4;
+                        ctx.lineCap = 'round';
+                        ctx.beginPath();
+                        ctx.moveTo(sx - perpX * segLen / 2, sy - perpY * segLen / 2);
+                        ctx.lineTo(sx + perpX * segLen / 2, sy + perpY * segLen / 2);
+                        ctx.stroke();
+
+                        // Glow
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.lineWidth = 8;
+                        ctx.stroke();
+                    }
+                    // I buchi non vengono disegnati (sono vuoti)
+                }
+
+                ctx.restore();
+            }
+
+            // Helper: ottiene punti lungo il perimetro di un quadrato tra due angoli
+            function getSquarePerimeterPoints(cx, cy, halfSize, startAngle, endAngle) {
+                const points = [];
+                const steps = 8;
+                for (let s = 0; s <= steps; s++) {
+                    const a = startAngle + (endAngle - startAngle) * (s / steps);
+                    const cos = Math.cos(a);
+                    const sin = Math.sin(a);
+                    // Intersezione raggio con quadrato
+                    const tx = cos !== 0 ? halfSize / Math.abs(cos) : Infinity;
+                    const ty = sin !== 0 ? halfSize / Math.abs(sin) : Infinity;
+                    const t = Math.min(tx, ty);
+                    points.push({ x: cx + cos * t, y: cy + sin * t });
+                }
+                return points;
+            }
+
+            // Disegna i proiettili del boss
+            if (bossProjectiles.length > 0) {
+                bossProjectiles.forEach(p => {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+
+                    let color = '#ffffff';
+                    if (p.type === 'random') color = '#f87171';
+                    else if (p.type === 'bouncing') color = '#fbbf24';
+                    else if (p.type === 'homing') color = '#818cf8';
+
+                    ctx.fillStyle = color;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // In grid mode, disegna un indicatore che sono "congelati"
+                    if (snapMode) {
+                        ctx.strokeStyle = 'rgba(139, 92, 246, 0.5)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, p.size / 2 + 3, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    ctx.restore();
+                });
+            }
+
             // 6. DISEGNA IL GIOCATORE
             if (isGameRunning) {
                 const isPlayerMoving = (keys['w'] || keys['arrowup'] || keys['s'] || keys['arrowdown'] || keys['a'] || keys['arrowleft'] || keys['d'] || keys['arrowright']) && !player.isDashing && !player.isCharging;
@@ -2665,7 +3337,7 @@
                     ctx.stroke();
                 }
             }
-            
+
             drawKey();
             drawCircuitLines();
             drawExitDoor();
@@ -2701,6 +3373,17 @@
                 updateKey();
                 checkKeyCollision();
                 checkDoorCollision();
+                if (isBossLevel && boss && boss.hp > 0) {
+                    // Cooldown sparo boss
+                    boss.shootCooldown--;
+                    if (boss.shootCooldown <= 0 && !snapMode) {
+                        bossShoot();
+                        boss.shootCooldown = 60 + Math.floor(Math.random() * 40);
+                    }
+                    updateBossProjectiles();
+                    pushBossProjectiles();
+                    handleBossCollision();
+                }
             }
 
             requestAnimationFrame(draw);
@@ -2820,6 +3503,11 @@
         document.getElementById('menu-btn').addEventListener('click', () => {
             gameoverOverlay.style.opacity = '0';
             gameoverOverlay.classList.add('hidden');
+
+            boss = null;
+            bossProjectiles = [];
+            isBossLevel = false;
+            bossShieldState = 0;
 
             globalRotationWarning = false;
 
